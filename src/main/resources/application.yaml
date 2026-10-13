@@ -17,3 +17,8 @@ spring:
 
 server:
   port: 8082
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-minutes: 60
