@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.opportunity;
+package com.vftech.fluxopro.opportunity.entity;
 
 import java.util.EnumSet;
 import java.util.Map;

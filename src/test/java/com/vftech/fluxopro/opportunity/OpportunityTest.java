@@ -1,7 +1,10 @@
 package com.vftech.fluxopro.opportunity;
 
+import com.vftech.fluxopro.Exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
+import com.vftech.fluxopro.opportunity.entity.Opportunity;
+import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.user.entity.Role;
 import com.vftech.fluxopro.user.entity.User;
 import org.junit.jupiter.api.Test;

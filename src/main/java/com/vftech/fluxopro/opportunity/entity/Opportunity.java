@@ -1,7 +1,8 @@
-package com.vftech.fluxopro.opportunity;
+package com.vftech.fluxopro.opportunity.entity;
 
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
+import com.vftech.fluxopro.Exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.user.entity.User;
 import jakarta.persistence.*;
 
