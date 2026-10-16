@@ -1,8 +1,9 @@
 package com.vftech.fluxopro.opportunity.entity;
 
+import com.vftech.fluxopro.exception.BusinessRuleException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
-import com.vftech.fluxopro.Exception.InvalidStatusTransitionException;
+import com.vftech.fluxopro.exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.user.entity.User;
 import jakarta.persistence.*;
 
@@ -74,7 +75,7 @@ public class Opportunity {
         }
         if (target == OpportunityStatus.LOST) {
             if (lostReason == null || lostReason.isBlank()) {
-                throw new IllegalArgumentException("A reason is required to mark an opportunity as lost");
+                throw new BusinessRuleException("A reason is required to mark an opportunity as lost");
             }
             this.lostReason = lostReason.trim();
         }

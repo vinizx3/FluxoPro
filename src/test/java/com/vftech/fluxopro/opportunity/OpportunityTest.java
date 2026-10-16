@@ -1,6 +1,7 @@
 package com.vftech.fluxopro.opportunity;
 
-import com.vftech.fluxopro.Exception.InvalidStatusTransitionException;
+import com.vftech.fluxopro.exception.BusinessRuleException;
+import com.vftech.fluxopro.exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
@@ -61,7 +62,7 @@ class OpportunityTest {
         Opportunity opportunity = newOpportunity();
 
         assertThatThrownBy(() -> opportunity.changeStatus(OpportunityStatus.LOST, "  ", T1))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessRuleException.class);
 
         assertThat(opportunity.getStatus()).isEqualTo(OpportunityStatus.LEAD);
     }

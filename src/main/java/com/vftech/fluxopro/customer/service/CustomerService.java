@@ -5,7 +5,7 @@ import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.dto.CustomerRequest;
 import com.vftech.fluxopro.customer.dto.CustomerResponse;
 import com.vftech.fluxopro.customer.entity.Customer;
-import com.vftech.fluxopro.customer.reposiroty.CustomerRepository;
+import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.security.AuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

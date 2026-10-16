@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.customer.reposiroty;
+package com.vftech.fluxopro.customer.repository;
 
 import com.vftech.fluxopro.customer.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
