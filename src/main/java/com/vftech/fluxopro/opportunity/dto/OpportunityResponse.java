@@ -17,7 +17,9 @@ public record OpportunityResponse(
         BigDecimal amount,
         OpportunityStatus status,
         String lostReason,
-        Instant statusChangedAt) {
+        Instant statusChangedAt,
+        Instant archivedAt,
+        Long version) {
 
     public static OpportunityResponse from(Opportunity o) {
         return new OpportunityResponse(
@@ -30,6 +32,8 @@ public record OpportunityResponse(
                 o.getAmount(),
                 o.getStatus(),
                 o.getLostReason(),
-                o.getStatusChangedAt());
+                o.getStatusChangedAt(),
+                o.getArchivedAt(),
+                o.getVersion());
     }
 }

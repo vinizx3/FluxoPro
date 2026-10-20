@@ -1,5 +1,6 @@
 package com.vftech.fluxopro.opportunity.service;
 
+import com.vftech.fluxopro.common.concurrency.VersionCheck;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.entity.Customer;
@@ -7,10 +8,11 @@ import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.opportunity.dto.MoveStatusRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
+import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
-import com.vftech.fluxopro.security.AuthenticatedUser;
+import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -49,7 +51,7 @@ public class OpportunityService {
 
     @Transactional
     public OpportunityResponse create(AuthenticatedUser user, OpportunityRequest request) {
-        Customer customer = customers.findByIdAndCompanyId(request.customerId(), user.companyId())
+        Customer customer = customers.findByIdAndCompanyIdAndArchivedAtIsNull(request.customerId(), user.companyId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
         Company company = companies.getReferenceById(user.companyId());
         User owner = users.getReferenceById(user.id());
@@ -62,9 +64,9 @@ public class OpportunityService {
     @Transactional(readOnly = true)
     public Map<OpportunityStatus, List<OpportunityResponse>> board(AuthenticatedUser user) {
         List<Opportunity> open = user.isOwner()
-                ? opportunities.findByCompanyIdAndStatusInOrderByStatusChangedAtAsc(
+                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
                 user.companyId(), OPEN_STATUSES)
-                : opportunities.findByCompanyIdAndOwnerIdAndStatusInOrderByStatusChangedAtAsc(
+                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
                 user.companyId(), user.id(), OPEN_STATUSES);
 
         Map<OpportunityStatus, List<OpportunityResponse>> board = new EnumMap<>(OpportunityStatus.class);
@@ -79,10 +81,26 @@ public class OpportunityService {
     }
 
     @Transactional
+    public OpportunityResponse update(AuthenticatedUser user, UUID id, OpportunityUpdateRequest request) {
+        Opportunity opportunity = findVisible(user, id);
+        VersionCheck.ensure(opportunity.getVersion(), request.version());
+        opportunity.update(request.title().trim(), request.amount());
+        opportunities.saveAndFlush(opportunity);
+        return OpportunityResponse.from(opportunity);
+    }
+
+    @Transactional
     public OpportunityResponse move(AuthenticatedUser user, UUID id, MoveStatusRequest request) {
         Opportunity opportunity = findVisible(user, id);
+        VersionCheck.ensure(opportunity.getVersion(), request.version());
         opportunity.changeStatus(request.status(), request.lostReason(), Instant.now(clock));
+        opportunities.saveAndFlush(opportunity);
         return OpportunityResponse.from(opportunity);
+    }
+
+    @Transactional
+    public void archive(AuthenticatedUser user, UUID id) {
+        findVisible(user, id).archive(Instant.now(clock));
     }
 
     private Opportunity findVisible(AuthenticatedUser user, UUID id) {

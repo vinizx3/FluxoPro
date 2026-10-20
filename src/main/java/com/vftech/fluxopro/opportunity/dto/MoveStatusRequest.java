@@ -6,5 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record MoveStatusRequest(
         @NotNull OpportunityStatus status,
-        @Size(max = 255) String lostReason) {
+        @Size(max = 255) String lostReason,
+        @NotNull Long version) {
 }

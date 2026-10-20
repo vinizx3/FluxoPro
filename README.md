@@ -2,7 +2,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fase 2 de 12 (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 e 2 de 12 concluídas (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -16,11 +16,12 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 
 - **Multi-tenant desde o início:** cada empresa só enxerga os próprios dados. A empresa vem do token assinado, nunca do corpo da requisição.
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT. As senhas são armazenadas com hash BCrypt.
-- **Clientes:** criar, listar e consultar, sempre dentro da empresa.
-- **Oportunidades (Kanban):** criar, ver o quadro agrupado por etapa e mover o cartão com as regras de negócio aplicadas.
+- **Clientes:** criar, listar com paginação e busca por nome, consultar, editar e arquivar, sempre dentro da empresa. Um cliente com oportunidades abertas não pode ser arquivado.
+- **Oportunidades (Kanban):** criar, ver o quadro agrupado por etapa, mover o cartão com as regras de negócio aplicadas, editar título e valor e arquivar as já finalizadas.
 - **Visibilidade por papel:** o `OWNER` vê todas as oportunidades da empresa; o `SELLER` vê só as dele.
-- **Erros consistentes:** violação de regra de negócio devolve `422`, e recurso de outra empresa devolve `404`, ambos no mesmo formato de resposta.
-- **43 testes automatizados** (regras de domínio, lógica dos services com Mockito e contexto da aplicação).
+- **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio (controle de concorrência otimista).
+- **Erros consistentes:** violação de regra de negócio devolve `422`, conflito de edição devolve `409` e recurso de outra empresa devolve `404`, todos no mesmo formato de resposta.
+- **58 testes automatizados** (regras de domínio, lógica dos services com Mockito e contexto da aplicação).
 
 ### Regras do funil
 
@@ -31,7 +32,8 @@ qualquer etapa aberta ----------------------------> LOST (motivo obrigatório)
 
 - O cartão anda para a etapa vizinha, para frente ou para trás, e não pode pular etapas.
 - `WON` só é alcançado a partir de `NEGOTIATION`.
-- `WON` e `LOST` são estados finais.
+- `WON` e `LOST` são estados finais, e só oportunidades finalizadas podem ser arquivadas.
+- Registros arquivados não são editados nem movidos, e não aparecem no quadro.
 - Toda oportunidade registra quando mudou de etapa pela última vez (`status_changed_at`). É esse dado que a detecção de oportunidades paradas vai usar.
 
 ## Tecnologias
@@ -55,6 +57,9 @@ Planejadas: Kafka, Redis, Testcontainers, Actuator + Micrometer + Prometheus + G
 - **404 em vez de 403.** Acessar um recurso de outra empresa devolve `404`, para a API nunca confirmar que um ID existe.
 - **Relógio injetável.** O tempo vem de um bean `Clock`, o que mantém as regras que dependem de data testáveis.
 - **Sem N+1 no quadro.** Cliente e responsável são carregados com um entity graph, numa única consulta.
+- **Arquivar em vez de apagar.** Registros arquivados mantêm o histórico e saem das telas. Os índices são parciais (`WHERE archived_at IS NULL`), então o arquivo morto não pesa nas consultas do dia a dia.
+- **Concorrência otimista.** Cada registro tem uma `version`. A API compara a versão que o cliente leu com a gravada, e o `@Version` do JPA cobre a janela entre a checagem e a gravação.
+- **Paginação controlada pela API.** Tamanho máximo de página, ordenação fixa com desempate por `id` e resposta num formato próprio, sem expor detalhes internos do Spring Data.
 - **Sem segredos no repositório.** As credenciais do banco e o segredo do JWT vêm de variáveis de ambiente.
 
 ## Como rodar
@@ -124,12 +129,16 @@ curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 | POST | `/auth/login` | Devolve um token |
 | GET | `/me` | Identidade que consta no token |
 | POST | `/customers` | Cria um cliente |
-| GET | `/customers` | Lista os clientes da empresa |
+| GET | `/customers?search=&page=&size=` | Lista paginada dos clientes ativos, com busca por nome |
 | GET | `/customers/{id}` | Consulta um cliente |
+| PUT | `/customers/{id}` | Edita um cliente (exige `version`) |
+| POST | `/customers/{id}/archive` | Arquiva um cliente sem oportunidades abertas |
 | POST | `/opportunities` | Cria uma oportunidade (começa em `LEAD`) |
 | GET | `/opportunities/board` | Oportunidades abertas agrupadas por etapa |
 | GET | `/opportunities/{id}` | Consulta uma oportunidade |
-| PATCH | `/opportunities/{id}/status` | Move para outra etapa (`lostReason` obrigatório para `LOST`) |
+| PUT | `/opportunities/{id}` | Edita título e valor (exige `version`) |
+| PATCH | `/opportunities/{id}/status` | Move para outra etapa (exige `version`; `lostReason` obrigatório para `LOST`) |
+| POST | `/opportunities/{id}/archive` | Arquiva uma oportunidade `WON` ou `LOST` |
 | GET | `/actuator/health` | Verificação de saúde (público) |
 
 Tudo, exceto `/auth/**` e `/actuator/health`, exige o cabeçalho `Authorization: Bearer <token>`.
@@ -147,7 +156,7 @@ O teste de contexto da aplicação precisa do banco rodando (`docker compose up 
 | Fase | Escopo | Status |
 |---|---|---|
 | 1 | Fundação: Docker, Flyway, JWT, papéis, multi-tenant | Concluída |
-| 2 | Funil comercial (Kanban) | Núcleo concluído; edição, arquivamento e paginação pendentes |
+| 2 | Funil comercial (Kanban), edição, arquivamento e paginação | Concluída |
 | 3 | Projetos criados a partir de oportunidades ganhas | Planejada |
 | 4 | Auditoria (quem alterou o quê e quando) | Planejada |
 | 5 | Kafka: o evento "oportunidade ganha" cria o projeto; lembretes de oportunidades paradas | Planejada |

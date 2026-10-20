@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.exception;
+package com.vftech.fluxopro.common.exception;
 
 import jakarta.persistence.Version;
 

@@ -15,11 +15,14 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, UUID> 
     @EntityGraph(attributePaths = {"customer", "owner"})
     Optional<Opportunity> findByIdAndCompanyId(UUID id, UUID companyId);
 
+    boolean existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
+            UUID customerId, UUID companyId, Collection<OpportunityStatus> statuses);
+
     @EntityGraph(attributePaths = {"customer", "owner"})
-    List<Opportunity> findByCompanyIdAndStatusInOrderByStatusChangedAtAsc(
+    List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
             UUID companyId, Collection<OpportunityStatus> statuses);
 
     @EntityGraph(attributePaths = {"customer", "owner"})
-    List<Opportunity> findByCompanyIdAndOwnerIdAndStatusInOrderByStatusChangedAtAsc(
+    List<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
             UUID companyId, UUID ownerId, Collection<OpportunityStatus> statuses);
 }

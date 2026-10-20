@@ -3,9 +3,10 @@ package com.vftech.fluxopro.opportunity.Controller;
 import com.vftech.fluxopro.opportunity.dto.MoveStatusRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
+import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
-import com.vftech.fluxopro.security.CurrentUser;
+import com.vftech.fluxopro.common.security.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,17 @@ public class OpportunityController {
     @GetMapping("/{id}")
     public OpportunityResponse get(@PathVariable UUID id) {
         return service.get(currentUser.get(), id);
+    }
+
+    @PutMapping("/{id}")
+    public OpportunityResponse update(@PathVariable UUID id, @Valid @RequestBody OpportunityUpdateRequest request) {
+        return service.update(currentUser.get(), id, request);
+    }
+
+    @PostMapping("/{id}/archive")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void archive(@PathVariable UUID id) {
+        service.archive(currentUser.get(), id);
     }
 
     @PatchMapping("/{id}/status")

@@ -1,7 +1,7 @@
 package com.vftech.fluxopro.opportunity;
 
-import com.vftech.fluxopro.exception.BusinessRuleException;
-import com.vftech.fluxopro.exception.InvalidStatusTransitionException;
+import com.vftech.fluxopro.common.exception.BusinessRuleException;
+import com.vftech.fluxopro.common.exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
@@ -91,25 +91,27 @@ class OpportunityTest {
 
     @Test
     void archivedOpportunityCannotChangeStatus() {
-        Opportunity opportunity = newOpportunity();
+        Opportunity opportunity = lostOpportunity();
         opportunity.archive(T1);
 
         assertThatThrownBy(() -> opportunity.changeStatus(OpportunityStatus.QUALIFICATION, null, T1))
-                .isInstanceOf(BusinessRuleException.class);
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Archived opportunities");
     }
 
     @Test
     void archivedOpportunityCannotBeEdited() {
-        Opportunity opportunity = newOpportunity();
+        Opportunity opportunity = lostOpportunity();
         opportunity.archive(T1);
 
         assertThatThrownBy(() -> opportunity.update("New title", BigDecimal.ONE))
-                .isInstanceOf(BusinessRuleException.class);
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Archived opportunities");
     }
 
     @Test
     void archivingTwiceKeepsTheFirstDate() {
-        Opportunity opportunity = newOpportunity();
+        Opportunity opportunity = lostOpportunity();
         opportunity.archive(T0);
         opportunity.archive(T1);
 
@@ -124,5 +126,20 @@ class OpportunityTest {
 
         assertThat(opportunity.getTitle()).isEqualTo("New title");
         assertThat(opportunity.getAmount()).isEqualByComparingTo("2000.00");
+    }
+
+    @Test
+    void openOpportunityCannotBeArchived() {
+        Opportunity opportunity = newOpportunity();
+
+        assertThatThrownBy(() -> opportunity.archive(T1))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("won or lost");
+    }
+
+    private Opportunity lostOpportunity() {
+        Opportunity opportunity = newOpportunity();
+        opportunity.changeStatus(OpportunityStatus.LOST, "No budget", T0);
+        return opportunity;
     }
 }

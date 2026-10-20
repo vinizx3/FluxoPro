@@ -1,7 +1,7 @@
 package com.vftech.fluxopro.customer.entity;
 
 import com.vftech.fluxopro.company.entity.Company;
-import com.vftech.fluxopro.exception.BusinessRuleException;
+import com.vftech.fluxopro.common.exception.BusinessRuleException;
 import jakarta.persistence.*;
 import jakarta.persistence.Version;
 
@@ -60,6 +60,7 @@ public class Customer {
     public String getPhone() { return phone; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Long getVersion() { return version; }
 
     @Version
     private Long version;

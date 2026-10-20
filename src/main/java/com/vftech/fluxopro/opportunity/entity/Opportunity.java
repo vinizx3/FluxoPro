@@ -1,9 +1,9 @@
 package com.vftech.fluxopro.opportunity.entity;
 
-import com.vftech.fluxopro.exception.BusinessRuleException;
+import com.vftech.fluxopro.common.exception.BusinessRuleException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.customer.entity.Customer;
-import com.vftech.fluxopro.exception.InvalidStatusTransitionException;
+import com.vftech.fluxopro.common.exception.InvalidStatusTransitionException;
 import com.vftech.fluxopro.user.entity.User;
 import jakarta.persistence.*;
 
@@ -100,6 +100,7 @@ public class Opportunity {
     public Instant getStatusChangedAt() { return statusChangedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Long getVersion() { return version; }
 
     @Version
     private Long version;
@@ -119,14 +120,18 @@ public class Opportunity {
     }
 
     public void archive(Instant now) {
-        if (archivedAt == null) {
-            this.archivedAt = now;
+        if (archivedAt != null) {
+            return;
         }
+        if (status.isOpen()) {
+            throw new BusinessRuleException("Only won or lost opportunities can be archived");
+        }
+        this.archivedAt = now;
     }
 
     private void ensureNotArchived() {
         if (archivedAt != null) {
-            throw new BusinessRuleException("Archived customers cannot be changed");
+            throw new BusinessRuleException("Archived opportunities cannot be changed");
         }
     }
 }

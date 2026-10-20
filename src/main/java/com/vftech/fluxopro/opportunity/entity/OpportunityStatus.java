@@ -1,8 +1,6 @@
 package com.vftech.fluxopro.opportunity.entity;
 
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public enum OpportunityStatus {
     LEAD, QUALIFICATION, PROPOSAL, NEGOTIATION, WON, LOST;
@@ -21,5 +19,9 @@ public enum OpportunityStatus {
 
     public boolean isOpen() {
         return this != WON && this != LOST;
+    }
+
+    public static List<OpportunityStatus> openStatuses() {
+        return Arrays.stream(values()).filter(OpportunityStatus::isOpen).toList();
     }
 }

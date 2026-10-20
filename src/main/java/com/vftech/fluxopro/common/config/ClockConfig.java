@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.config;
+package com.vftech.fluxopro.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.security;
+package com.vftech.fluxopro.common.security;
 
 import com.vftech.fluxopro.user.entity.Role;
 import org.springframework.security.core.Authentication;

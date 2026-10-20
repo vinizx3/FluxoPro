@@ -1,4 +1,4 @@
-package com.vftech.fluxopro.security;
+package com.vftech.fluxopro.common.security;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;

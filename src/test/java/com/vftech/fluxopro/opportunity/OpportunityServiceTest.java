@@ -1,6 +1,7 @@
 package com.vftech.fluxopro.opportunity;
 
-import com.vftech.fluxopro.exception.BusinessRuleException;
+import com.vftech.fluxopro.common.exception.BusinessRuleException;
+import com.vftech.fluxopro.common.exception.ConflictException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.entity.Customer;
@@ -8,11 +9,12 @@ import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.opportunity.dto.MoveStatusRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityRequest;
 import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
+import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
-import com.vftech.fluxopro.security.AuthenticatedUser;
+import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,12 +84,15 @@ class OpportunityServiceTest {
         User owner = new User(company, "Seller", "seller@acme.com", "hash",
                 com.vftech.fluxopro.user.entity.Role.SELLER);
         ReflectionTestUtils.setField(owner, "id", userId);
-        return new Opportunity(company, customer, owner, "Deal", BigDecimal.TEN, CREATED_AT);
+        Opportunity opportunity = new Opportunity(company, customer, owner, "Deal", BigDecimal.TEN, CREATED_AT);
+        ReflectionTestUtils.setField(opportunity, "version", 0L);
+        return opportunity;
     }
 
     @Test
     void ownerBoardShowsAllOpenOpportunitiesOfTheCompany() {
-        when(opportunities.findByCompanyIdAndStatusInOrderByStatusChangedAtAsc(eq(companyId), anyCollection()))
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+                eq(companyId), anyCollection()))
                 .thenReturn(List.of(opportunityOwnedBy(sellerId)));
 
         Map<OpportunityStatus, List<OpportunityResponse>> board = service.board(owner());
@@ -97,20 +102,20 @@ class OpportunityServiceTest {
                 OpportunityStatus.PROPOSAL, OpportunityStatus.NEGOTIATION);
         assertThat(board.get(OpportunityStatus.LEAD)).hasSize(1);
         assertThat(board.get(OpportunityStatus.PROPOSAL)).isEmpty();
-        verify(opportunities, never()).findByCompanyIdAndOwnerIdAndStatusInOrderByStatusChangedAtAsc(
+        verify(opportunities, never()).findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
                 any(), any(), anyCollection());
     }
 
     @Test
     void sellerBoardIsRestrictedToTheirOwnOpportunities() {
-        when(opportunities.findByCompanyIdAndOwnerIdAndStatusInOrderByStatusChangedAtAsc(
+        when(opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
                 eq(companyId), eq(sellerId), anyCollection()))
                 .thenReturn(List.of(opportunityOwnedBy(sellerId)));
 
         Map<OpportunityStatus, List<OpportunityResponse>> board = service.board(seller());
 
         assertThat(board.get(OpportunityStatus.LEAD)).hasSize(1);
-        verify(opportunities, never()).findByCompanyIdAndStatusInOrderByStatusChangedAtAsc(
+        verify(opportunities, never()).findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
                 any(), anyCollection());
     }
 
@@ -152,7 +157,7 @@ class OpportunityServiceTest {
                 .thenReturn(Optional.of(opportunityOwnedBy(sellerId)));
 
         OpportunityResponse response = service.move(
-                seller(), id, new MoveStatusRequest(OpportunityStatus.QUALIFICATION, null));
+                seller(), id, new MoveStatusRequest(OpportunityStatus.QUALIFICATION, null, 0L));
 
         assertThat(response.status()).isEqualTo(OpportunityStatus.QUALIFICATION);
         assertThat(response.statusChangedAt()).isEqualTo(NOW);
@@ -165,14 +170,15 @@ class OpportunityServiceTest {
                 .thenReturn(Optional.of(opportunityOwnedBy(sellerId)));
 
         assertThatThrownBy(() -> service.move(
-                seller(), id, new MoveStatusRequest(OpportunityStatus.WON, null)))
+                seller(), id, new MoveStatusRequest(OpportunityStatus.WON, null, 0L)))
                 .isInstanceOf(BusinessRuleException.class);
     }
 
     @Test
     void createRejectsCustomerFromAnotherCompany() {
         UUID customerId = UUID.randomUUID();
-        when(customers.findByIdAndCompanyId(customerId, companyId)).thenReturn(Optional.empty());
+        when(customers.findByIdAndCompanyIdAndArchivedAtIsNull(customerId, companyId))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(
                 owner(), new OpportunityRequest(customerId, "Deal", BigDecimal.TEN)))
@@ -180,5 +186,40 @@ class OpportunityServiceTest {
                 .hasMessageContaining("Customer not found");
 
         verify(opportunities, never()).save(any());
+    }
+
+    @Test
+    void moveWithStaleVersionIsRejectedAndKeepsStatus() {
+        UUID id = UUID.randomUUID();
+        Opportunity opportunity = opportunityOwnedBy(sellerId);
+        when(opportunities.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(opportunity));
+
+        assertThatThrownBy(() -> service.move(
+                seller(), id, new MoveStatusRequest(OpportunityStatus.QUALIFICATION, null, 5L)))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(opportunity.getStatus()).isEqualTo(OpportunityStatus.LEAD);
+        verify(opportunities, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void archivingAnOpenOpportunityIsRejected() {
+        UUID id = UUID.randomUUID();
+        when(opportunities.findByIdAndCompanyId(id, companyId))
+                .thenReturn(Optional.of(opportunityOwnedBy(sellerId)));
+
+        assertThatThrownBy(() -> service.archive(seller(), id))
+                .isInstanceOf(BusinessRuleException.class);
+    }
+
+    @Test
+    void sellerCannotEditAnotherSellersOpportunity() {
+        UUID id = UUID.randomUUID();
+        when(opportunities.findByIdAndCompanyId(id, companyId))
+                .thenReturn(Optional.of(opportunityOwnedBy(otherSellerId)));
+
+        assertThatThrownBy(() -> service.update(
+                seller(), id, new OpportunityUpdateRequest("New title", BigDecimal.ONE, 0L)))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }
