@@ -1,7 +1,9 @@
 package com.vftech.fluxopro.customer.entity;
 
 import com.vftech.fluxopro.company.entity.Company;
+import com.vftech.fluxopro.exception.BusinessRuleException;
 import jakarta.persistence.*;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -58,4 +60,34 @@ public class Customer {
     public String getPhone() { return phone; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    @Version
+    private Long version;
+
+    private Instant archivedAt;
+
+    public boolean isArchived() {
+        return archivedAt != null;
+    }
+
+    public Instant getArchivedAt() { return archivedAt; }
+
+    public void update(String name, String email, String phone) {
+        ensureNotArchived();
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+    }
+
+    public void archive(Instant now) {
+        if (archivedAt == null) {
+            this.archivedAt = now;
+        }
+    }
+
+    private void ensureNotArchived() {
+        if (archivedAt != null) {
+            throw new BusinessRuleException("Archived customers cannot be changed");
+        }
+    }
 }

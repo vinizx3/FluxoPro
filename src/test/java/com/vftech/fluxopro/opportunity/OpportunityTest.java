@@ -88,4 +88,41 @@ class OpportunityTest {
         assertThatThrownBy(() -> opportunity.changeStatus(OpportunityStatus.NEGOTIATION, null, T1))
                 .isInstanceOf(InvalidStatusTransitionException.class);
     }
+
+    @Test
+    void archivedOpportunityCannotChangeStatus() {
+        Opportunity opportunity = newOpportunity();
+        opportunity.archive(T1);
+
+        assertThatThrownBy(() -> opportunity.changeStatus(OpportunityStatus.QUALIFICATION, null, T1))
+                .isInstanceOf(BusinessRuleException.class);
+    }
+
+    @Test
+    void archivedOpportunityCannotBeEdited() {
+        Opportunity opportunity = newOpportunity();
+        opportunity.archive(T1);
+
+        assertThatThrownBy(() -> opportunity.update("New title", BigDecimal.ONE))
+                .isInstanceOf(BusinessRuleException.class);
+    }
+
+    @Test
+    void archivingTwiceKeepsTheFirstDate() {
+        Opportunity opportunity = newOpportunity();
+        opportunity.archive(T0);
+        opportunity.archive(T1);
+
+        assertThat(opportunity.getArchivedAt()).isEqualTo(T0);
+    }
+
+    @Test
+    void updateChangesTitleAndAmount() {
+        Opportunity opportunity = newOpportunity();
+
+        opportunity.update("New title", new BigDecimal("2000.00"));
+
+        assertThat(opportunity.getTitle()).isEqualTo("New title");
+        assertThat(opportunity.getAmount()).isEqualByComparingTo("2000.00");
+    }
 }
