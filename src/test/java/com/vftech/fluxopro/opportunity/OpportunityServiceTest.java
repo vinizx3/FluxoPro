@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -57,6 +58,8 @@ class OpportunityServiceTest {
     CompanyRepository companies;
     @Mock
     UserRepository users;
+    @Mock
+    ApplicationEventPublisher events;
 
     private final UUID companyId = UUID.randomUUID();
     private final UUID sellerId = UUID.randomUUID();
@@ -67,7 +70,7 @@ class OpportunityServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        service = new OpportunityService(opportunities, customers, companies, users, clock);
+        service = new OpportunityService(opportunities, customers, companies, users, clock, events);
     }
 
     private AuthenticatedUser owner() {

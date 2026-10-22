@@ -11,6 +11,7 @@ import com.vftech.fluxopro.customer.entity.Customer;
 import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.customer.service.CustomerService;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
+import com.vftech.fluxopro.project.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,13 +45,15 @@ class CustomerServiceTest {
     CompanyRepository companies;
     @Mock
     OpportunityRepository opportunities;
+    @Mock
+    ProjectRepository projectRepository;
 
     private final UUID companyId = UUID.randomUUID();
     private CustomerService service;
 
     @BeforeEach
     void setUp() {
-        service = new CustomerService(customers, companies, opportunities, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new CustomerService(customers, companies, opportunities, projectRepository, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private AuthenticatedUser user() {
@@ -100,6 +103,23 @@ class CustomerServiceTest {
 
         assertThatThrownBy(() -> service.archive(user(), id))
                 .isInstanceOf(BusinessRuleException.class);
+
+        assertThat(customer.isArchived()).isFalse();
+    }
+
+    @Test
+    void archiveIsRejectedWhileCustomerHasOpenProjects() {
+        UUID id = UUID.randomUUID();
+        Customer customer = customerWithVersion(0L);
+        when(customers.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(customer));
+        when(opportunities.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
+                eq(id), eq(companyId), anyCollection())).thenReturn(false);
+        when(projectRepository.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
+                eq(id), eq(companyId), anyCollection())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.archive(user(), id))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("open projects");
 
         assertThat(customer.isArchived()).isFalse();
     }

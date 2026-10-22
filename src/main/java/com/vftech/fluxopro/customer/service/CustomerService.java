@@ -13,6 +13,8 @@ import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
+import com.vftech.fluxopro.project.entity.ProjectStatus;
+import com.vftech.fluxopro.project.repository.ProjectRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,15 +36,14 @@ public class CustomerService {
     private final CustomerRepository customers;
     private final CompanyRepository companies;
     private final OpportunityRepository opportunities;
+    private final ProjectRepository projectRepository;
     private final Clock clock;
 
-    public CustomerService(CustomerRepository customers,
-                           CompanyRepository companies,
-                           OpportunityRepository opportunities,
-                           Clock clock) {
+    public CustomerService(CustomerRepository customers, CompanyRepository companies, OpportunityRepository opportunities, ProjectRepository projectRepository, Clock clock) {
         this.customers = customers;
         this.companies = companies;
         this.opportunities = opportunities;
+        this.projectRepository = projectRepository;
         this.clock = clock;
     }
 
@@ -88,11 +89,19 @@ public class CustomerService {
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
         Customer customer = find(user, id);
+
         boolean hasOpenOpportunities = opportunities.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
                 id, user.companyId(), OpportunityStatus.openStatuses());
         if (hasOpenOpportunities) {
             throw new BusinessRuleException("Customer has open opportunities and cannot be archived");
         }
+
+        boolean hasOpenProjects = projectRepository.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
+                id, user.companyId(), ProjectStatus.openStatuses());
+        if (hasOpenProjects) {
+            throw new BusinessRuleException("Customer has open projects and cannot be archived");
+        }
+
         customer.archive(Instant.now(clock));
     }
 

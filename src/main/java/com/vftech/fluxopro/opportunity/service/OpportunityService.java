@@ -11,10 +11,12 @@ import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
 import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
+import com.vftech.fluxopro.opportunity.event.OpportunityWonEvent;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,17 +38,15 @@ public class OpportunityService {
     private final CompanyRepository companies;
     private final UserRepository users;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    public OpportunityService(OpportunityRepository opportunities,
-                              CustomerRepository customers,
-                              CompanyRepository companies,
-                              UserRepository users,
-                              Clock clock) {
+    public OpportunityService(OpportunityRepository opportunities, CustomerRepository customers, CompanyRepository companies, UserRepository users, Clock clock, ApplicationEventPublisher events) {
         this.opportunities = opportunities;
         this.customers = customers;
         this.companies = companies;
         this.users = users;
         this.clock = clock;
+        this.events = events;
     }
 
     @Transactional
@@ -95,8 +95,18 @@ public class OpportunityService {
         VersionCheck.ensure(opportunity.getVersion(), request.version());
         opportunity.changeStatus(request.status(), request.lostReason(), Instant.now(clock));
         opportunities.saveAndFlush(opportunity);
+
+        if (opportunity.getStatus() == OpportunityStatus.WON) {
+            events.publishEvent(new OpportunityWonEvent(
+                    opportunity.getId(),
+                    opportunity.getCompany().getId(),
+                    opportunity.getCustomer().getId(),
+                    opportunity.getOwner().getId(),
+                    opportunity.getTitle()));
+        }
         return OpportunityResponse.from(opportunity);
     }
+
 
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
