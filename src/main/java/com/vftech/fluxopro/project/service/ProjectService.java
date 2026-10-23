@@ -1,5 +1,10 @@
 package com.vftech.fluxopro.project.service;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
+import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.concurrency.VersionCheck;
 import com.vftech.fluxopro.common.dto.PageResponse;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
@@ -25,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,14 +42,15 @@ public class ProjectService {
     private final CustomerRepository customers;
     private final CompanyRepository companies;
     private final UserRepository users;
+    private final AuditRecorder audit;
     private final Clock clock;
 
-    public ProjectService(ProjectRepository projects, CustomerRepository customers,
-                          CompanyRepository companies, UserRepository users, Clock clock) {
+    public ProjectService(ProjectRepository projects, CustomerRepository customers, CompanyRepository companies, UserRepository users, AuditRecorder audit , Clock clock) {
         this.projects = projects;
         this.customers = customers;
         this.companies = companies;
         this.users = users;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -60,6 +67,13 @@ public class ProjectService {
                 blankToNull(request.description()),
                 request.expectedDeliveryDate(),
                 Instant.now(clock)));
+        audit.record(user, AuditEntityType.PROJECT, project.getId(), AuditAction.CREATED,
+                ChangeSet.create()
+                        .track("name", null, project.getName())
+                        .track("description", null, project.getDescription())
+                        .track("expectedDeliveryDate", null, project.getExpectedDeliveryDate())
+                        .track("customerId", null, request.customerId())
+                        .build());
         return ProjectResponse.from(project);
     }
 
@@ -93,8 +107,18 @@ public class ProjectService {
     public ProjectResponse update(AuthenticatedUser user, UUID id, ProjectUpdateRequest request) {
         Project project = findVisible(user, id);
         VersionCheck.ensure(project.getVersion(), request.version());
-        project.update(request.name().trim(), blankToNull(request.description()), request.expectedDeliveryDate());
+
+        String name = request.name().trim();
+        String description = blankToNull(request.description());
+        List<FieldChange> changes = ChangeSet.create()
+                .track("name", project.getName(), name)
+                .track("description", project.getDescription(), description)
+                .track("expectedDeliveryDate", project.getExpectedDeliveryDate(), request.expectedDeliveryDate())
+                .build();
+
+        project.update(name, description, request.expectedDeliveryDate());
         projects.saveAndFlush(project);
+        audit.record(user, AuditEntityType.PROJECT, project.getId(), AuditAction.UPDATED, changes);
         return ProjectResponse.from(project);
     }
 
@@ -102,14 +126,24 @@ public class ProjectService {
     public ProjectResponse move(AuthenticatedUser user, UUID id, ProjectStatusRequest request) {
         Project project = findVisible(user, id);
         VersionCheck.ensure(project.getVersion(), request.version());
+
+        ProjectStatus statusBefore = project.getStatus();
         project.changeStatus(request.status(), Instant.now(clock));
         projects.saveAndFlush(project);
+
+        audit.record(user, AuditEntityType.PROJECT, project.getId(), AuditAction.STATUS_CHANGED,
+                ChangeSet.create().track("status", statusBefore, project.getStatus()).build());
         return ProjectResponse.from(project);
     }
 
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
-        findVisible(user, id).archive(Instant.now(clock));
+        Project project = findVisible(user, id);
+        boolean alreadyArchived = project.isArchived();
+        project.archive(Instant.now(clock));
+        if (!alreadyArchived) {
+            audit.record(user, AuditEntityType.PROJECT, id, AuditAction.ARCHIVED, List.of());
+        }
     }
 
     private Project findVisible(AuthenticatedUser user, UUID id) {

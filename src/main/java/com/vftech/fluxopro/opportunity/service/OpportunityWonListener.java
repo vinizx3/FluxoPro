@@ -1,5 +1,9 @@
 package com.vftech.fluxopro.opportunity.service;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
+import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.opportunity.event.OpportunityWonEvent;
@@ -21,16 +25,16 @@ public class OpportunityWonListener {
     private final CustomerRepository customers;
     private final UserRepository users;
     private final OpportunityRepository opportunities;
+    private final AuditRecorder audit;
     private final Clock clock;
 
-    public OpportunityWonListener(ProjectRepository projects, CompanyRepository companies,
-                                  CustomerRepository customers, UserRepository users,
-                                  OpportunityRepository opportunities, Clock clock) {
+    public OpportunityWonListener(ProjectRepository projects, CompanyRepository companies, CustomerRepository customers, UserRepository users, OpportunityRepository opportunities, AuditRecorder audit, Clock clock) {
         this.projects = projects;
         this.companies = companies;
         this.customers = customers;
         this.users = users;
         this.opportunities = opportunities;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -39,7 +43,7 @@ public class OpportunityWonListener {
         if (projects.existsBySourceOpportunityId(event.opportunityId())) {
             return;
         }
-        projects.save(new Project(
+        Project project = projects.save(new Project(
                 companies.getReferenceById(event.companyId()),
                 customers.getReferenceById(event.customerId()),
                 opportunities.getReferenceById(event.opportunityId()),
@@ -48,5 +52,12 @@ public class OpportunityWonListener {
                 null,
                 null,
                 Instant.now(clock)));
+
+        audit.record(event.companyId(), event.actorId(), AuditEntityType.PROJECT, project.getId(),
+                AuditAction.CREATED,
+                ChangeSet.create()
+                        .track("name", null, project.getName())
+                        .track("sourceOpportunityId", null, event.opportunityId())
+                        .build());
     }
 }

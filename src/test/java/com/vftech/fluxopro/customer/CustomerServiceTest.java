@@ -1,5 +1,9 @@
 package com.vftech.fluxopro.customer;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.common.exception.BusinessRuleException;
 import com.vftech.fluxopro.common.exception.ConflictException;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
@@ -16,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -26,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,13 +53,17 @@ class CustomerServiceTest {
     OpportunityRepository opportunities;
     @Mock
     ProjectRepository projectRepository;
+    @Mock
+    AuditRecorder audit;
+
+    @Captor ArgumentCaptor<List<FieldChange>> changes;
 
     private final UUID companyId = UUID.randomUUID();
     private CustomerService service;
 
     @BeforeEach
     void setUp() {
-        service = new CustomerService(customers, companies, opportunities, projectRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new CustomerService(customers, companies, opportunities, projectRepository, audit, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private AuthenticatedUser user() {
@@ -144,6 +154,46 @@ class CustomerServiceTest {
 
         assertThatThrownBy(() -> service.get(user(), id))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+
+    @Test
+    void updateAuditsOnlyTheFieldsThatChanged() {
+        UUID id = UUID.randomUUID();
+        when(customers.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(customerWithVersion(3L)));
+
+        service.update(user(), id, new CustomerUpdateRequest(" New name ", "new@acme.com", " ", 3L));
+
+        verify(audit).record(any(AuthenticatedUser.class), eq(AuditEntityType.CUSTOMER), any(),
+                eq(AuditAction.UPDATED), changes.capture());
+        assertThat(changes.getValue()).containsExactly(
+                new FieldChange("name", "Client", "New name"),
+                new FieldChange("email", null, "new@acme.com"));
+    }
+
+    @Test
+    void rejectedUpdateIsNotAudited() {
+        UUID id = UUID.randomUUID();
+        when(customers.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(customerWithVersion(4L)));
+
+        assertThatThrownBy(() -> service.update(user(), id,
+                new CustomerUpdateRequest("New name", null, null, 3L)))
+                .isInstanceOf(ConflictException.class);
+
+        verify(audit, never()).record(any(AuthenticatedUser.class), any(), any(), any(), any());
+    }
+
+    @Test
+    void archiveIsAudited() {
+        UUID id = UUID.randomUUID();
+        when(customers.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(customerWithVersion(0L)));
+        when(opportunities.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
+                eq(id), eq(companyId), anyCollection())).thenReturn(false);
+
+        service.archive(user(), id);
+
+        verify(audit).record(any(AuthenticatedUser.class), eq(AuditEntityType.CUSTOMER), eq(id),
+                eq(AuditAction.ARCHIVED), eq(List.of()));
     }
 
     @Test

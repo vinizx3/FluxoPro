@@ -7,5 +7,6 @@ public record OpportunityWonEvent(
         UUID companyId,
         UUID customerId,
         UUID ownerId,
+        UUID actorId,
         String title) {
 }

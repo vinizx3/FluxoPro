@@ -1,5 +1,10 @@
 package com.vftech.fluxopro.opportunity.service;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
+import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.concurrency.VersionCheck;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
@@ -39,14 +44,16 @@ public class OpportunityService {
     private final UserRepository users;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final AuditRecorder audit;
 
-    public OpportunityService(OpportunityRepository opportunities, CustomerRepository customers, CompanyRepository companies, UserRepository users, Clock clock, ApplicationEventPublisher events) {
+    public OpportunityService(OpportunityRepository opportunities, CustomerRepository customers, CompanyRepository companies, UserRepository users, Clock clock, ApplicationEventPublisher events, AuditRecorder audit) {
         this.opportunities = opportunities;
         this.customers = customers;
         this.companies = companies;
         this.users = users;
         this.clock = clock;
         this.events = events;
+        this.audit = audit;
     }
 
     @Transactional
@@ -58,6 +65,12 @@ public class OpportunityService {
 
         Opportunity opportunity = opportunities.save(new Opportunity(
                 company, customer, owner, request.title().trim(), request.amount(), Instant.now(clock)));
+        audit.record(user, AuditEntityType.OPPORTUNITY, opportunity.getId(), AuditAction.CREATED,
+                ChangeSet.create()
+                        .track("title", null, opportunity.getTitle())
+                        .track("amount", null, opportunity.getAmount())
+                        .track("customerId", null, request.customerId())
+                        .build());
         return OpportunityResponse.from(opportunity);
     }
 
@@ -84,8 +97,16 @@ public class OpportunityService {
     public OpportunityResponse update(AuthenticatedUser user, UUID id, OpportunityUpdateRequest request) {
         Opportunity opportunity = findVisible(user, id);
         VersionCheck.ensure(opportunity.getVersion(), request.version());
-        opportunity.update(request.title().trim(), request.amount());
+
+        String title = request.title().trim();
+        List<FieldChange> changes = ChangeSet.create()
+                .track("title", opportunity.getTitle(), title)
+                .track("amount", opportunity.getAmount(), request.amount())
+                .build();
+
+        opportunity.update(title, request.amount());
         opportunities.saveAndFlush(opportunity);
+        audit.record(user, AuditEntityType.OPPORTUNITY, opportunity.getId(), AuditAction.UPDATED, changes);
         return OpportunityResponse.from(opportunity);
     }
 
@@ -93,8 +114,18 @@ public class OpportunityService {
     public OpportunityResponse move(AuthenticatedUser user, UUID id, MoveStatusRequest request) {
         Opportunity opportunity = findVisible(user, id);
         VersionCheck.ensure(opportunity.getVersion(), request.version());
+
+        OpportunityStatus statusBefore = opportunity.getStatus();
+        String lostReasonBefore = opportunity.getLostReason();
+
         opportunity.changeStatus(request.status(), request.lostReason(), Instant.now(clock));
         opportunities.saveAndFlush(opportunity);
+
+        audit.record(user, AuditEntityType.OPPORTUNITY, opportunity.getId(), AuditAction.STATUS_CHANGED,
+                ChangeSet.create()
+                        .track("status", statusBefore, opportunity.getStatus())
+                        .track("lostReason", lostReasonBefore, opportunity.getLostReason())
+                        .build());
 
         if (opportunity.getStatus() == OpportunityStatus.WON) {
             events.publishEvent(new OpportunityWonEvent(
@@ -102,6 +133,7 @@ public class OpportunityService {
                     opportunity.getCompany().getId(),
                     opportunity.getCustomer().getId(),
                     opportunity.getOwner().getId(),
+                    user.id(),
                     opportunity.getTitle()));
         }
         return OpportunityResponse.from(opportunity);
@@ -110,7 +142,12 @@ public class OpportunityService {
 
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
-        findVisible(user, id).archive(Instant.now(clock));
+        Opportunity opportunity = findVisible(user, id);
+        boolean alreadyArchived = opportunity.isArchived();
+        opportunity.archive(Instant.now(clock));
+        if (!alreadyArchived) {
+            audit.record(user, AuditEntityType.OPPORTUNITY, id, AuditAction.ARCHIVED, List.of());
+        }
     }
 
     private Opportunity findVisible(AuthenticatedUser user, UUID id) {

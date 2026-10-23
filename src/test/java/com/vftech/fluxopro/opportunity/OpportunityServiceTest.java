@@ -1,5 +1,6 @@
 package com.vftech.fluxopro.opportunity;
 
+import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.common.exception.BusinessRuleException;
 import com.vftech.fluxopro.common.exception.ConflictException;
 import com.vftech.fluxopro.company.entity.Company;
@@ -60,6 +61,8 @@ class OpportunityServiceTest {
     UserRepository users;
     @Mock
     ApplicationEventPublisher events;
+    @Mock
+    AuditRecorder audit;
 
     private final UUID companyId = UUID.randomUUID();
     private final UUID sellerId = UUID.randomUUID();
@@ -70,7 +73,7 @@ class OpportunityServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        service = new OpportunityService(opportunities, customers, companies, users, clock, events);
+        service = new OpportunityService(opportunities, customers, companies, users, clock, events, audit);
     }
 
     private AuthenticatedUser owner() {

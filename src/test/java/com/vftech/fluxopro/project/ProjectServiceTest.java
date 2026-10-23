@@ -1,5 +1,9 @@
 package com.vftech.fluxopro.project;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.common.exception.ConflictException;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.company.entity.Company;
@@ -20,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -30,6 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,13 +55,17 @@ class ProjectServiceTest {
     CompanyRepository companies;
     @Mock
     UserRepository users;
+    @Mock
+    AuditRecorder audit;
+
+    @Captor ArgumentCaptor<List<FieldChange>> changes;
 
     private final UUID companyId = UUID.randomUUID();
     private ProjectService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(projects, customers, companies, users, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new ProjectService(projects, customers, companies, users, audit, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private AuthenticatedUser owner() {
@@ -156,6 +166,49 @@ class ProjectServiceTest {
 
         verify(projects).findByCompanyIdAndOwnerIdAndArchivedAtIsNull(
                 eq(companyId), eq(user.id()), any(Pageable.class));
+    }
+
+    @Test
+    void moveIsAuditedAsAStatusChange() {
+        UUID id = UUID.randomUUID();
+        AuthenticatedUser actor = owner();
+        when(projects.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(project(2L, mock(User.class))));
+
+        service.move(actor, id, new ProjectStatusRequest(ProjectStatus.IN_PROGRESS, 2L));
+
+        verify(audit).record(eq(actor), eq(AuditEntityType.PROJECT), any(),
+                eq(AuditAction.STATUS_CHANGED), changes.capture());
+        assertThat(changes.getValue()).containsExactly(new FieldChange("status", "PLANNING", "IN_PROGRESS"));
+    }
+
+    @Test
+    void rejectedMoveIsNotAudited() {
+        UUID id = UUID.randomUUID();
+        when(projects.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(project(4L, mock(User.class))));
+
+        assertThatThrownBy(() -> service.move(owner(), id,
+                new ProjectStatusRequest(ProjectStatus.IN_PROGRESS, 3L)))
+                .isInstanceOf(ConflictException.class);
+
+        verify(audit, never()).record(any(AuthenticatedUser.class), any(), any(), any(), any());
+    }
+
+    @Test
+    void createIsAuditedWithItsInitialValues() {
+        UUID customerId = UUID.randomUUID();
+        AuthenticatedUser actor = owner();
+        Company company = new Company("Acme");
+        when(customers.findByIdAndCompanyIdAndArchivedAtIsNull(customerId, companyId))
+                .thenReturn(Optional.of(new Customer(company, "Client", null, null)));
+        when(companies.getReferenceById(companyId)).thenReturn(company);
+        when(users.getReferenceById(actor.id())).thenReturn(mock(User.class));
+        when(projects.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.create(actor, new ProjectCreateRequest(customerId, "Website", null, null));
+
+        verify(audit).record(eq(actor), eq(AuditEntityType.PROJECT), any(),
+                eq(AuditAction.CREATED), changes.capture());
+        assertThat(changes.getValue()).contains(new FieldChange("name", null, "Website"));
     }
 
     @Test

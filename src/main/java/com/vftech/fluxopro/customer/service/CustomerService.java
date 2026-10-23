@@ -1,5 +1,10 @@
 package com.vftech.fluxopro.customer.service;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
+import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.concurrency.VersionCheck;
 import com.vftech.fluxopro.common.dto.PageResponse;
 import com.vftech.fluxopro.common.exception.BusinessRuleException;
@@ -26,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -37,13 +43,15 @@ public class CustomerService {
     private final CompanyRepository companies;
     private final OpportunityRepository opportunities;
     private final ProjectRepository projectRepository;
+    private final AuditRecorder audit;
     private final Clock clock;
 
-    public CustomerService(CustomerRepository customers, CompanyRepository companies, OpportunityRepository opportunities, ProjectRepository projectRepository, Clock clock) {
+    public CustomerService(CustomerRepository customers, CompanyRepository companies, OpportunityRepository opportunities, ProjectRepository projectRepository, AuditRecorder audit ,Clock clock) {
         this.customers = customers;
         this.companies = companies;
         this.opportunities = opportunities;
         this.projectRepository = projectRepository;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -55,6 +63,12 @@ public class CustomerService {
                 request.name().trim(),
                 blankToNull(request.email()),
                 blankToNull(request.phone())));
+        audit.record(user, AuditEntityType.CUSTOMER, customer.getId(), AuditAction.CREATED,
+                ChangeSet.create()
+                        .track("name", null, customer.getName())
+                        .track("email", null, customer.getEmail())
+                        .track("phone", null, customer.getPhone())
+                        .build());
         return CustomerResponse.from(customer);
     }
 
@@ -81,10 +95,22 @@ public class CustomerService {
     public CustomerResponse update(AuthenticatedUser user, UUID id, CustomerUpdateRequest request) {
         Customer customer = find(user, id);
         VersionCheck.ensure(customer.getVersion(), request.version());
-        customer.update(request.name().trim(), blankToNull(request.email()), blankToNull(request.phone()));
+
+        String name = request.name().trim();
+        String email = blankToNull(request.email());
+        String phone = blankToNull(request.phone());
+        List<FieldChange> changes = ChangeSet.create()
+                .track("name", customer.getName(), name)
+                .track("email", customer.getEmail(), email)
+                .track("phone", customer.getPhone(), phone)
+                .build();
+
+        customer.update(name, email, phone);
         customers.saveAndFlush(customer);
+        audit.record(user, AuditEntityType.CUSTOMER, customer.getId(), AuditAction.UPDATED, changes);
         return CustomerResponse.from(customer);
     }
+
 
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
@@ -95,14 +121,17 @@ public class CustomerService {
         if (hasOpenOpportunities) {
             throw new BusinessRuleException("Customer has open opportunities and cannot be archived");
         }
-
         boolean hasOpenProjects = projectRepository.existsByCustomerIdAndCompanyIdAndArchivedAtIsNullAndStatusIn(
                 id, user.companyId(), ProjectStatus.openStatuses());
         if (hasOpenProjects) {
             throw new BusinessRuleException("Customer has open projects and cannot be archived");
         }
 
+        boolean alreadyArchived = customer.isArchived();
         customer.archive(Instant.now(clock));
+        if (!alreadyArchived) {
+            audit.record(user, AuditEntityType.CUSTOMER, id, AuditAction.ARCHIVED, List.of());
+        }
     }
 
     private Customer find(AuthenticatedUser user, UUID id) {
