@@ -2,7 +2,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 4 de 12 concluídas (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 5 de 13 concluídas (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -21,10 +21,11 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Visibilidade por papel:** o `OWNER` vê todas as oportunidades da empresa; o `SELLER` vê só as dele.
 - **Projetos:** quando uma oportunidade é ganha, o projeto nasce sozinho, na mesma transação, ligado ao cliente e à venda de origem. Também é possível criar um projeto direto para um cliente, sem oportunidade. Etapas: planejamento, em andamento, entregue ou cancelado.
 - **Uma venda, um projeto:** o banco garante com um índice único que a mesma oportunidade nunca gera dois projetos.
+- **Alertas de oportunidade parada:** `GET /opportunities/stalled` lista as negociações abertas que não mudam de etapa há N dias (padrão 7). Um job diário (8h, horário de Brasília) cria uma notificação para o responsável de cada uma, uma única vez por período de parada. Cada usuário tem a sua caixa de entrada: listar, contar não lidas e marcar como lida.
 - **Auditoria:** toda criação, edição, mudança de etapa e arquivamento de clientes, oportunidades e projetos grava quem fez, o que mudou (valor antigo e novo) e quando. O registro é gravado na mesma transação da mudança e o banco impede alterar ou apagar o histórico. Só o `OWNER` consulta.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio (controle de concorrência otimista).
 - **Erros consistentes:** violação de regra de negócio devolve `422`, conflito de edição devolve `409` e recurso de outra empresa devolve `404`, todos no mesmo formato de resposta.
-- **96 testes automatizados** (regras de domínio, lógica dos services com Mockito e contexto da aplicação).
+- **116 testes automatizados** (regras de domínio, lógica dos services com Mockito e contexto da aplicação).
 
 ### Regras do funil
 
@@ -78,6 +79,8 @@ Planejadas: Kafka, Redis, Testcontainers, Actuator + Micrometer + Prometheus + G
 - **Venda ganha e projeto na mesma transação.** Ao ganhar uma oportunidade, a aplicação publica um evento interno e o módulo de projetos o consome de forma síncrona. Se a criação do projeto falhar, a venda não é marcada como ganha: nunca existe venda ganha sem projeto. O evento carrega só IDs, então na fase 5 ele passa a ser uma mensagem Kafka sem mudar a regra de negócio.
 - **Idempotência garantida pelo banco.** Um índice único parcial em `source_opportunity_id` impede dois projetos para a mesma venda, mesmo com requisições simultâneas ou eventos repetidos.
 - **Auditoria somente de inserção, garantida pelo banco.** O histórico é gravado na mesma transação da alteração: se a mudança é desfeita, o registro também é. Gatilhos (triggers) do PostgreSQL recusam `UPDATE` e `DELETE` nas tabelas de auditoria, então nem um bug na aplicação reescreve o passado. As mudanças ficam em linhas (campo, valor antigo, valor novo), consultáveis com SQL comum, sem depender de JSON.
+- **"Parada" é calculada, não gravada.** Uma oportunidade está parada se estiver aberta e a última mudança de etapa for mais antiga que o limite. Não existe flag para ficar desatualizada, e a consulta usa o índice do quadro.
+- **Alerta idempotente por período de parada.** Uma restrição única `(oportunidade, tipo, stalled_since)` impede notificações repetidas: o job pode rodar duas vezes, ou em duas instâncias, sem duplicar. Se o cartão é movido e esfria de novo, nasce um alerta novo. O job processa uma empresa por vez, cada uma na sua transação, e a falha de uma não interrompe as outras.
 
 ## Como rodar
 
@@ -162,8 +165,13 @@ curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 | PUT | `/projects/{id}` | Edita nome, descrição e data prevista (exige `version`) |
 | PATCH | `/projects/{id}/status` | Move para outra etapa (exige `version`) |
 | POST | `/projects/{id}/archive` | Arquiva um projeto entregue ou cancelado |
-| GET | `/actuator/health` | Verificação de saúde (público) |
 | GET | `/audit-log?entityType=&entityId=&page=&size=` | Histórico de alterações da empresa, mais recentes primeiro (somente `OWNER`; `entityId` exige `entityType`) |
+| GET | `/opportunities/stalled?days=&page=&size=` | Oportunidades abertas sem mudar de etapa há N dias (padrão 7); o `SELLER` vê só as dele |
+| GET | `/notifications?unreadOnly=&page=&size=` | Notificações do usuário logado |
+| GET | `/notifications/unread-count` | Quantidade de notificações não lidas |
+| POST | `/notifications/{id}/read` | Marca uma notificação como lida |
+| POST | `/notifications/read-all` | Marca todas como lidas |
+| GET | `/actuator/health` | Verificação de saúde (público) |
 
 Tudo, exceto `/auth/**` e `/actuator/health`, exige o cabeçalho `Authorization: Bearer <token>`.
 
@@ -177,20 +185,21 @@ O teste de contexto da aplicação precisa do banco rodando (`docker compose up 
 
 ## Roadmap
 
-| Fase | Escopo                                                                                                 | Status    |
-|---|--------------------------------------------------------------------------------------------------------|-----------|
-| 1 | Fundação: Docker, Flyway, JWT, papéis, multi-tenant                                                    | Concluída |
-| 2 | Funil comercial (Kanban), edição, arquivamento e paginação                                             | Concluída |
-| 3 | Projetos criados a partir de oportunidades ganhas                                                      | Conclúida |
-| 4 | Auditoria (quem alterou o quê e quando)                                                                | Concluída |
-| 5 | Kafka: o evento "oportunidade ganha" (hoje interno) vira mensagem Kafka; lembretes de oportunidades paradas | Planejada |
-| 6 | Testes de integração com Testcontainers (PostgreSQL e Kafka)                                           | Planejada |
-| 7 | Cache com Redis, com latência medida antes e depois                                                    | Planejada |
-| 8 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana                                             | Planejada |
-| 9 | Upload de documentos                                                                                   | Planejada |
-| 10 | Frontend em Angular                                                                                    | Planejada |
-| 11 | Resumo de oportunidade com IA (opcional)                                                               | Planejada |
-| 12 | Deploy, CI/CD com GitHub Actions e documentação                                                        | Planejada |
+| Fase | Escopo | Status |
+|---|---|---|
+| 1 | Fundação: Docker, Flyway, JWT, papéis, multi-tenant | Concluída |
+| 2 | Funil comercial (Kanban), edição, arquivamento e paginação | Concluída |
+| 3 | Projetos criados a partir de oportunidades ganhas | Concluída |
+| 4 | Auditoria (quem alterou o quê e quando) | Concluída |
+| 5 | Alertas de oportunidade parada (job diário e notificações) | Concluída |
+| 6 | Frontend em Angular | Planejada |
+| 7 | Deploy, CI/CD com GitHub Actions e documentação | Planejada |
+| 8 | Kafka: o evento "oportunidade ganha" (hoje interno) vira mensagem, com Outbox | Planejada |
+| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka) | Planejada |
+| 10 | Cache com Redis, com latência medida antes e depois | Planejada |
+| 11 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana | Planejada |
+| 12 | Upload de documentos | Planejada |
+| 13 | Resumo de oportunidade com IA (opcional) | Planejada |
 
 ## Autor
 

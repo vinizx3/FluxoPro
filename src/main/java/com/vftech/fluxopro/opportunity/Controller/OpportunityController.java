@@ -1,9 +1,7 @@
 package com.vftech.fluxopro.opportunity.Controller;
 
-import com.vftech.fluxopro.opportunity.dto.MoveStatusRequest;
-import com.vftech.fluxopro.opportunity.dto.OpportunityRequest;
-import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
-import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
+import com.vftech.fluxopro.common.dto.PageResponse;
+import com.vftech.fluxopro.opportunity.dto.*;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
 import com.vftech.fluxopro.common.security.CurrentUser;
@@ -41,6 +39,14 @@ public class OpportunityController {
     @GetMapping("/{id}")
     public OpportunityResponse get(@PathVariable UUID id) {
         return service.get(currentUser.get(), id);
+    }
+
+    @GetMapping("/stalled")
+    public PageResponse<StalledOpportunityResponse> stalled(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.stalled(currentUser.get(), days, page, size);
     }
 
     @PutMapping("/{id}")

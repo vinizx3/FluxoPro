@@ -6,14 +6,12 @@ import com.vftech.fluxopro.audit.entity.FieldChange;
 import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.concurrency.VersionCheck;
+import com.vftech.fluxopro.common.dto.PageResponse;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.entity.Customer;
 import com.vftech.fluxopro.customer.repository.CustomerRepository;
-import com.vftech.fluxopro.opportunity.dto.MoveStatusRequest;
-import com.vftech.fluxopro.opportunity.dto.OpportunityRequest;
-import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
-import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
+import com.vftech.fluxopro.opportunity.dto.*;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.event.OpportunityWonEvent;
@@ -22,12 +20,17 @@ import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -139,7 +142,6 @@ public class OpportunityService {
         return OpportunityResponse.from(opportunity);
     }
 
-
     @Transactional
     public void archive(AuthenticatedUser user, UUID id) {
         Opportunity opportunity = findVisible(user, id);
@@ -148,6 +150,29 @@ public class OpportunityService {
         if (!alreadyArchived) {
             audit.record(user, AuditEntityType.OPPORTUNITY, id, AuditAction.ARCHIVED, List.of());
         }
+    }
+
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_STALLED_DAYS = 365;
+
+    @Transactional(readOnly = true)
+    public PageResponse<StalledOpportunityResponse> stalled(AuthenticatedUser user, int days, int page, int size) {
+        int safeDays = Math.min(Math.max(days, 1), MAX_STALLED_DAYS);
+        Instant now = Instant.now(clock);
+        Instant limit = now.minus(Duration.ofDays(safeDays));
+
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
+                Sort.by("statusChangedAt").ascending().and(Sort.by("id").ascending()));
+
+        Page<Opportunity> result = user.isOwner()
+                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+                user.companyId(), OPEN_STATUSES, limit, pageable)
+                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+                user.companyId(), user.id(), OPEN_STATUSES, limit, pageable);
+
+        return PageResponse.of(result, o -> StalledOpportunityResponse.from(o, now));
     }
 
     private Opportunity findVisible(AuthenticatedUser user, UUID id) {
