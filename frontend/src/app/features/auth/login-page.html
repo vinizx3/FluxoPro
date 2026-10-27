@@ -1,0 +1,71 @@
+<div class="wrap">
+  <section class="card">
+    <h1 class="logo">Fluxo<span>Pro</span></h1>
+    <p class="tag">Saiba quando uma negociação esfria, antes de perdê-la.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'login'" [class.on]="mode() === 'login'" (click)="setMode('login')">Entrar</button>
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'register'" [class.on]="mode() === 'register'" (click)="setMode('register')">Criar empresa</button>
+    </div>
+
+    @if (mode() === 'login') {
+      <form [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="l-email">E-mail</label>
+          <input id="l-email" type="email" autocomplete="email" formControlName="email"
+                 [class.invalid]="loginForm.controls.email.touched && loginForm.controls.email.invalid" />
+          @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+            <span class="field-error">Informe um e-mail válido.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="l-pass">Senha</label>
+          <input id="l-pass" type="password" autocomplete="current-password" formControlName="password"
+                 [class.invalid]="loginForm.controls.password.touched && loginForm.controls.password.invalid" />
+          @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+            <span class="field-error">Informe a senha.</span>
+          }
+        </div>
+        @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ loading() ? 'Entrando…' : 'Entrar' }}</button>
+      </form>
+    } @else {
+      <form [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="r-company">Nome da empresa</label>
+          <input id="r-company" type="text" autocomplete="organization" formControlName="companyName"
+                 [class.invalid]="registerForm.controls.companyName.touched && registerForm.controls.companyName.invalid" />
+          @if (registerForm.controls.companyName.touched && registerForm.controls.companyName.invalid) {
+            <span class="field-error">Informe o nome da empresa.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="r-name">Seu nome</label>
+          <input id="r-name" type="text" autocomplete="name" formControlName="name"
+                 [class.invalid]="registerForm.controls.name.touched && registerForm.controls.name.invalid" />
+          @if (registerForm.controls.name.touched && registerForm.controls.name.invalid) {
+            <span class="field-error">Informe seu nome.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="r-email">E-mail</label>
+          <input id="r-email" type="email" autocomplete="email" formControlName="email"
+                 [class.invalid]="registerForm.controls.email.touched && registerForm.controls.email.invalid" />
+          @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
+            <span class="field-error">Informe um e-mail válido.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="r-pass">Senha</label>
+          <input id="r-pass" type="password" autocomplete="new-password" formControlName="password"
+                 [class.invalid]="registerForm.controls.password.touched && registerForm.controls.password.invalid" />
+          @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+            <span class="field-error">A senha precisa ter pelo menos 8 caracteres.</span>
+          }
+        </div>
+        @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ loading() ? 'Criando…' : 'Criar empresa' }}</button>
+      </form>
+    }
+  </section>
+</div>

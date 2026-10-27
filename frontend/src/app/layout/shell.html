@@ -1,0 +1,13 @@
+<header class="top">
+  <a class="brand" routerLink="/funil">Fluxo<span>Pro</span></a>
+  <nav aria-label="Principal">
+    <a routerLink="/funil" routerLinkActive="active">Funil</a>
+  </nav>
+  <div class="who">
+    <span class="role">{{ auth.roleLabel() }}</span>
+    <button type="button" class="btn btn-secondary" (click)="auth.logout()">Sair</button>
+  </div>
+</header>
+<main>
+  <router-outlet />
+</main>
