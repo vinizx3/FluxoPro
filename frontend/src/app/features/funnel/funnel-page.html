@@ -1,0 +1,107 @@
+<div class="head">
+  <h1>Funil</h1>
+  <button type="button" class="btn btn-secondary" (click)="reload()">Atualizar</button>
+</div>
+
+@if (error()) {
+  <p class="msg error" role="alert">{{ error() }}</p>
+}
+@if (notice()) {
+  <p class="msg ok" role="status">{{ notice() }}</p>
+}
+
+<section class="cooling" aria-labelledby="cooling-title">
+  <h2 id="cooling-title">Esfriando agora <span>{{ stalled().length }}</span></h2>
+  @if (stalled().length === 0) {
+    <p class="cooling-empty">Nenhuma negociação parada há {{ stallDays }} dias ou mais.</p>
+  } @else {
+    <ul class="cooling-list">
+      @for (s of stalled(); track s.id) {
+        <li>
+          <div>
+            <strong>{{ s.title }}</strong>
+            <span>{{ s.customerName }} · {{ label[s.status] }}</span>
+          </div>
+          <div class="cooling-meta">
+            <span class="days">{{ s.daysStalled }} dias parada</span>
+            <button type="button" class="link" (click)="showInFunnel(s.id)">Ver no funil</button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+@if (loading()) {
+  <p class="loading">Carregando negociações…</p>
+} @else {
+  <div class="board">
+    @for (col of columns(); track col.status) {
+      <section class="col" [attr.aria-label]="label[col.status]">
+        <header>
+          <h2>{{ label[col.status] }} <span class="count">{{ col.items.length }}</span></h2>
+          <span class="total">{{ col.total | currency: 'BRL' : 'symbol' : '1.0-0' }}</span>
+        </header>
+
+        @for (o of col.items; track o.id) {
+          <article class="card" [class.cold]="cold(o)" [id]="'opp-' + o.id" tabindex="-1">
+            <h3>{{ o.title }}</h3>
+            <p class="customer">{{ o.customerName }}</p>
+            <p class="amount">
+              @if (o.amount !== null) {
+                {{ o.amount | currency: 'BRL' }}
+              } @else {
+                Sem valor
+              }
+            </p>
+            <div class="thermo" role="img" [attr.aria-label]="days(o) + ' dias nesta etapa'">
+              <div class="ticks" [class.cold]="cold(o)">
+                @for (i of tickIndexes; track i) { <i [class.on]="tickOn(o, i)"></i> }
+              </div>
+              <span>{{ days(o) }} {{ days(o) === 1 ? 'dia' : 'dias' }}</span>
+            </div>
+            <p class="owner">{{ o.ownerName }}</p>
+            <select
+              class="move"
+              [attr.aria-label]="'Mover ' + o.title + ' para'"
+              [disabled]="movingId() === o.id"
+              (change)="onSelect(o, $event)"
+            >
+              <option value="">Mover para…</option>
+              @for (t of targets(o); track t) {
+                <option [value]="t">{{ label[t] }}</option>
+              }
+            </select>
+          </article>
+        } @empty {
+          <p class="empty">Nenhuma negociação nesta etapa.</p>
+        }
+      </section>
+    }
+  </div>
+}
+
+@if (pendingLoss(); as pending) {
+  <div class="overlay">
+    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="loss-title" (ngSubmit)="confirmLoss()">
+      <h2 id="loss-title">Marcar como perdida</h2>
+      <p>{{ pending.opportunity.title }} — {{ pending.opportunity.customerName }}</p>
+      <div class="field">
+        <label for="loss-reason">Motivo da perda</label>
+        <input
+          id="loss-reason"
+          name="reason"
+          type="text"
+          maxlength="255"
+          autofocus
+          [ngModel]="pending.reason"
+          (ngModelChange)="setReason($event)"
+        />
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelLoss()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!pending.reason.trim()">Confirmar</button>
+      </div>
+    </form>
+  </div>
+}
