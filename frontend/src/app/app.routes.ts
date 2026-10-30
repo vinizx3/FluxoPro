@@ -25,6 +25,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/customers/customers-page').then((m) => m.CustomersPage),
       },
       {
+        path: 'projetos',
+        loadComponent: () => import('./features/projects/projects-page').then((m) => m.ProjectsPage),
+      },
+      {
+        path: 'projetos/:id',
+        loadComponent: () =>
+          import('./features/projects/project-detail-page').then((m) => m.ProjectDetailPage),
+      },
+      {
         path: 'negociacoes/:id',
         loadComponent: () =>
           import('./features/opportunity/opportunity-detail-page').then((m) => m.OpportunityDetailPage),

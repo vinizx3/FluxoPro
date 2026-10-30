@@ -131,6 +131,17 @@ p {
   font-weight: 500;
 }
 
+.field textarea {
+  min-height: 96px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 400 16px var(--font-body);
+  resize: vertical;
+}
+
 .field input {
   min-height: var(--touch);
   padding: 0 14px;
@@ -199,3 +210,12 @@ select.control { min-height: var(--touch); border: 1px solid var(--border-field)
 .muted { color: var(--text-muted); }
 .empty { padding: 20px; border: 1px dashed var(--border-field); border-radius: var(--radius); color: var(--text-muted); }
 .pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; span { color: var(--text-muted); font-size: .875rem; } }
+
+.pill { padding: 2px 12px; border-radius: 99px; font-size: .8125rem; font-weight: 600; white-space: nowrap;
+  &.won, &.delivered { background: #e8f3ec; color: var(--success); }
+  &.lost { background: var(--danger-bg); color: var(--danger); }
+  &.planning { background: var(--cold-badge); color: var(--cold); }
+  &.progress { background: #fdeee6; color: var(--hot-action); }
+  &.cancelled { background: var(--bg); color: var(--text-muted); } }
+
+dd a, .field-error a { color: var(--hot-action); font-weight: 600; }
