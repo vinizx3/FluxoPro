@@ -4,3 +4,4 @@
 dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; dt { color: var(--text-muted); } dd { margin: 0; font-weight: 600; } }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .late { margin-left: 8px; color: var(--danger); font-weight: 600; font-size: .8125rem; }
+.hist { color: var(--hot-action); font-weight: 600; }

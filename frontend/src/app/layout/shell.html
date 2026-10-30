@@ -4,6 +4,9 @@
     <a routerLink="/funil" routerLinkActive="active">Funil</a>
     <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
     <a routerLink="/projetos" routerLinkActive="active">Projetos</a>
+    @if (auth.isOwner()) {
+      <a routerLink="/historico" routerLinkActive="active">Histórico</a>
+    }
     <a routerLink="/alertas" routerLinkActive="active">
       Alertas
       @if (notifications.unread() > 0) {

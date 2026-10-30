@@ -26,6 +26,9 @@
           <dt>Origem</dt><dd><a [routerLink]="['/negociacoes', p.sourceOpportunityId]">Ver negociação</a></dd>
         }
       </dl>
+      @if (auth.isOwner()) {
+        <a class="hist" routerLink="/historico" [queryParams]="{ tipo: 'PROJECT', id: p.id }">Ver histórico deste projeto</a>
+      }
       @if (targets(p).length > 0) {
         <div class="field">
           <label for="status-move">Mudar etapa</label>

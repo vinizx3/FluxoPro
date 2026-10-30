@@ -2,6 +2,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/error-message';
 import { Opportunity, OpportunityApi, STATUS_LABEL } from '../../core/opportunity';
 import { Thermometer } from '../../shared/thermometer';
@@ -13,6 +14,7 @@ import { Thermometer } from '../../shared/thermometer';
   styleUrl: './opportunity-detail-page.scss',
 })
 export class OpportunityDetailPage {
+  protected readonly auth = inject(AuthService);
   private readonly api = inject(OpportunityApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

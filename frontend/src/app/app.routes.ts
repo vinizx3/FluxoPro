@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth.guards';
+import { authGuard, guestGuard, ownerGuard } from './core/auth.guards';
 
 export const routes: Routes = [
   {
@@ -32,6 +32,11 @@ export const routes: Routes = [
         path: 'projetos/:id',
         loadComponent: () =>
           import('./features/projects/project-detail-page').then((m) => m.ProjectDetailPage),
+      },
+      {
+        path: 'historico',
+        canActivate: [ownerGuard],
+        loadComponent: () => import('./features/audit/audit-page').then((m) => m.AuditPage),
       },
       {
         path: 'negociacoes/:id',
