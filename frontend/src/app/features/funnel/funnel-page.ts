@@ -1,6 +1,8 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Customer, CustomerApi } from '../../core/customer';
 import { errorMessage } from '../../core/error-message';
 import {
   Board,
@@ -12,7 +14,8 @@ import {
   StalledOpportunity,
   allowedTargets,
 } from '../../core/opportunity';
-import { STALL_DAYS, TICKS, activeTicks, daysSince, isCold } from '../../core/stall';
+import { STALL_DAYS, daysSince, isCold } from '../../core/stall';
+import { Thermometer } from '../../shared/thermometer';
 
 interface PendingLoss {
   opportunity: Opportunity;
@@ -21,16 +24,17 @@ interface PendingLoss {
 
 @Component({
   selector: 'app-funnel-page',
-  imports: [CurrencyPipe, FormsModule],
+  imports: [CurrencyPipe, FormsModule, ReactiveFormsModule, RouterLink, Thermometer],
   templateUrl: './funnel-page.html',
   styleUrl: './funnel-page.scss',
 })
 export class FunnelPage {
   private readonly api = inject(OpportunityApi);
+  private readonly customerApi = inject(CustomerApi);
+  private readonly fb = inject(FormBuilder);
 
   protected readonly label = STATUS_LABEL;
   protected readonly stallDays = STALL_DAYS;
-  protected readonly tickIndexes = Array.from({ length: TICKS }, (_, i) => i);
 
   protected readonly board = signal<Board>({});
   protected readonly stalled = signal<StalledOpportunity[]>([]);
@@ -40,6 +44,17 @@ export class FunnelPage {
   protected readonly movingId = signal<string | null>(null);
   protected readonly pendingLoss = signal<PendingLoss | null>(null);
   private readonly now = signal(Date.now());
+
+  protected readonly newOpen = signal(false);
+  protected readonly customers = signal<Customer[]>([]);
+  protected readonly customersLoaded = signal(false);
+  protected readonly saving = signal(false);
+  protected readonly newError = signal<string | null>(null);
+  protected readonly newForm = this.fb.group({
+    customerId: ['', Validators.required],
+    title: ['', [Validators.required, Validators.maxLength(200)]],
+    amount: this.fb.control<number | null>(null, Validators.min(0)),
+  });
 
   protected readonly columns = computed(() =>
     OPEN_STATUSES.map((status) => {
@@ -77,16 +92,8 @@ export class FunnelPage {
     });
   }
 
-  protected days(o: Opportunity): number {
-    return daysSince(o.statusChangedAt, this.now());
-  }
-
   protected cold(o: Opportunity): boolean {
-    return isCold(this.days(o));
-  }
-
-  protected tickOn(o: Opportunity, index: number): boolean {
-    return index < activeTicks(this.days(o));
+    return isCold(daysSince(o.statusChangedAt, this.now()));
   }
 
   protected targets(o: Opportunity): OpportunityStatus[] {
@@ -99,6 +106,55 @@ export class FunnelPage {
     el?.focus();
   }
 
+  // ---- nova negociação ----
+  protected openNew(): void {
+    this.newForm.reset({ customerId: '', title: '', amount: null });
+    this.newError.set(null);
+    this.newOpen.set(true);
+    if (!this.customersLoaded()) {
+      this.customerApi.list('', 0, 100).subscribe({
+        next: (page) => {
+          this.customers.set(page.content);
+          this.customersLoaded.set(true);
+        },
+        error: (err: unknown) => this.newError.set(errorMessage(err)),
+      });
+    }
+  }
+
+  protected closeNew(): void {
+    this.newOpen.set(false);
+  }
+
+  protected createOpportunity(): void {
+    if (this.newForm.invalid) {
+      this.newForm.markAllAsTouched();
+      return;
+    }
+    const value = this.newForm.getRawValue();
+    this.saving.set(true);
+    this.newError.set(null);
+    this.api
+      .create({ customerId: value.customerId ?? '', title: (value.title ?? '').trim(), amount: value.amount })
+      .subscribe({
+        next: (created) => {
+          const next: Board = { ...this.board() };
+          if (OPEN_STATUSES.includes(created.status)) {
+            next[created.status] = [created, ...(next[created.status] ?? [])];
+          }
+          this.board.set(next);
+          this.saving.set(false);
+          this.newOpen.set(false);
+          this.notice.set(`"${created.title}" foi criada em ${STATUS_LABEL[created.status]}.`);
+        },
+        error: (err: unknown) => {
+          this.saving.set(false);
+          this.newError.set(errorMessage(err, { 404: 'Cliente não encontrado. Atualize a página.' }));
+        },
+      });
+  }
+
+  // ---- mover ----
   protected onSelect(o: Opportunity, event: Event): void {
     const select = event.target as HTMLSelectElement;
     const target = select.value as OpportunityStatus | '';

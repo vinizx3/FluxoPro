@@ -80,12 +80,7 @@ export function parseToken(token: string | null, now: number = Date.now()): Sess
 
 function readStoredToken(): string | null {
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token && !parseToken(token)) {
-      localStorage.removeItem(TOKEN_KEY);
-      return null;
-    }
-    return token;
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }

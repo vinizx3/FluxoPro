@@ -16,6 +16,15 @@ export const routes: Routes = [
         path: 'funil',
         loadComponent: () => import('./features/funnel/funnel-page').then((m) => m.FunnelPage),
       },
+      {
+        path: 'clientes',
+        loadComponent: () => import('./features/customers/customers-page').then((m) => m.CustomersPage),
+      },
+      {
+        path: 'negociacoes/:id',
+        loadComponent: () =>
+          import('./features/opportunity/opportunity-detail-page').then((m) => m.OpportunityDetailPage),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'funil' },
     ],
   },

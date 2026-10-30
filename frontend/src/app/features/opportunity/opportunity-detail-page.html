@@ -1,0 +1,61 @@
+<p class="back"><a routerLink="/funil">← Voltar ao funil</a></p>
+
+@if (loading()) {
+  <p class="muted">Carregando…</p>
+} @else if (opportunity(); as o) {
+  <div class="page-head">
+    <h1>{{ o.title }}</h1>
+    <span class="status">{{ label[o.status] }}</span>
+  </div>
+
+  @if (error()) { <p class="msg error" role="alert">{{ error() }}</p> }
+  @if (notice()) { <p class="msg ok" role="status">{{ notice() }}</p> }
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Resumo</h2>
+      <dl>
+        <dt>Cliente</dt><dd>{{ o.customerName }}</dd>
+        <dt>Responsável</dt><dd>{{ o.ownerName }}</dd>
+        <dt>Valor</dt><dd>@if (o.amount !== null) { {{ o.amount | currency: 'BRL' }} } @else { Sem valor }</dd>
+        @if (o.status === 'LOST' && o.lostReason) { <dt>Motivo da perda</dt><dd>{{ o.lostReason }}</dd> }
+      </dl>
+      <h3>Tempo na etapa</h3>
+      <app-thermometer [since]="o.statusChangedAt" />
+    </section>
+
+    <form class="panel" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h2>Editar</h2>
+      <div class="field">
+        <label for="d-title">Título</label>
+        <input id="d-title" type="text" maxlength="200" formControlName="title"
+               [class.invalid]="form.controls.title.touched && form.controls.title.invalid" />
+        @if (form.controls.title.touched && form.controls.title.invalid) { <span class="field-error">Informe o título.</span> }
+      </div>
+      <div class="field">
+        <label for="d-amount">Valor (R$)</label>
+        <input id="d-amount" type="number" min="0" step="0.01" formControlName="amount" />
+        @if (form.controls.amount.invalid) { <span class="field-error">O valor não pode ser negativo.</span> }
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Salvando…' : 'Salvar alterações' }}</button>
+        <button type="button" class="btn btn-secondary" (click)="askArchive()">Arquivar negociação</button>
+      </div>
+    </form>
+  </div>
+} @else {
+  @if (error()) { <p class="msg error" role="alert">{{ error() }}</p> }
+}
+
+@if (confirmingArchive()) {
+  <div class="overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="arch-title">
+      <h2 id="arch-title">Arquivar negociação</h2>
+      <p>Ela deixa de aparecer no funil. Você quer arquivar?</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelArchive()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="archive()">Arquivar</button>
+      </div>
+    </div>
+  </div>
+}

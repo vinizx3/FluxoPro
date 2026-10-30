@@ -1,0 +1,87 @@
+<div class="page-head">
+  <h1>Clientes</h1>
+  <button type="button" class="btn btn-primary" (click)="openNew()">Novo cliente</button>
+</div>
+
+<div class="field search">
+  <label for="search">Buscar cliente</label>
+  <input id="search" type="search" placeholder="Nome, e-mail ou telefone" (input)="onSearch($event)" />
+</div>
+
+@if (error()) { <p class="msg error" role="alert">{{ error() }}</p> }
+@if (notice()) { <p class="msg ok" role="status">{{ notice() }}</p> }
+
+@if (loading()) {
+  <p class="muted">Carregando clientes…</p>
+} @else if (result(); as page) {
+  @if (page.content.length === 0) {
+    <p class="empty">
+      @if (search()) { Nenhum cliente encontrado para "{{ search() }}". } @else { Você ainda não tem clientes. Cadastre o primeiro para criar negociações. }
+    </p>
+  } @else {
+    <ul class="list">
+      @for (c of page.content; track c.id) {
+        <li>
+          <div class="who">
+            <strong>{{ c.name }}</strong>
+            <span>{{ c.email || 'Sem e-mail' }} · {{ c.phone || 'Sem telefone' }}</span>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" (click)="openEdit(c)">Editar</button>
+            <button type="button" class="btn btn-secondary" (click)="askArchive(c)">Arquivar</button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (page.totalPages > 1) {
+      <nav class="pager" aria-label="Paginação">
+        <button type="button" class="btn btn-secondary" [disabled]="page.page === 0" (click)="goTo(page.page - 1)">Anterior</button>
+        <span>Página {{ page.page + 1 }} de {{ page.totalPages }} · {{ page.totalElements }} clientes</span>
+        <button type="button" class="btn btn-secondary" [disabled]="page.page + 1 >= page.totalPages" (click)="goTo(page.page + 1)">Próxima</button>
+      </nav>
+    }
+  }
+}
+
+@if (editing(); as target) {
+  <div class="overlay">
+    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="c-title" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h2 id="c-title">{{ target === 'new' ? 'Novo cliente' : 'Editar cliente' }}</h2>
+      <div class="field">
+        <label for="c-name">Nome</label>
+        <input id="c-name" type="text" maxlength="150" formControlName="name"
+               [class.invalid]="form.controls.name.touched && form.controls.name.invalid" />
+        @if (form.controls.name.touched && form.controls.name.invalid) { <span class="field-error">Informe o nome do cliente.</span> }
+      </div>
+      <div class="field">
+        <label for="c-email">E-mail (opcional)</label>
+        <input id="c-email" type="email" maxlength="255" formControlName="email"
+               [class.invalid]="form.controls.email.touched && form.controls.email.invalid" />
+        @if (form.controls.email.touched && form.controls.email.invalid) { <span class="field-error">Informe um e-mail válido.</span> }
+      </div>
+      <div class="field">
+        <label for="c-phone">Telefone (opcional)</label>
+        <input id="c-phone" type="tel" maxlength="30" formControlName="phone" />
+      </div>
+      @if (formError()) { <p class="msg error" role="alert">{{ formError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Salvando…' : 'Salvar' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (archiving(); as customer) {
+  <div class="overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="a-title">
+      <h2 id="a-title">Arquivar cliente</h2>
+      <p>"{{ customer.name }}" deixa de aparecer na lista. Você quer arquivar?</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelArchive()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmArchive()">Arquivar</button>
+      </div>
+    </div>
+  </div>
+}

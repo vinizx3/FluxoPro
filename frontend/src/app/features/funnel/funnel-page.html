@@ -1,6 +1,9 @@
-<div class="head">
+<div class="page-head">
   <h1>Funil</h1>
-  <button type="button" class="btn btn-secondary" (click)="reload()">Atualizar</button>
+  <div class="head-actions">
+    <button type="button" class="btn btn-secondary" (click)="reload()">Atualizar</button>
+    <button type="button" class="btn btn-primary" (click)="openNew()">Nova negociação</button>
+  </div>
 </div>
 
 @if (error()) {
@@ -45,7 +48,7 @@
 
         @for (o of col.items; track o.id) {
           <article class="card" [class.cold]="cold(o)" [id]="'opp-' + o.id" tabindex="-1">
-            <h3>{{ o.title }}</h3>
+            <h3><a [routerLink]="['/negociacoes', o.id]">{{ o.title }}</a></h3>
             <p class="customer">{{ o.customerName }}</p>
             <p class="amount">
               @if (o.amount !== null) {
@@ -54,12 +57,7 @@
                 Sem valor
               }
             </p>
-            <div class="thermo" role="img" [attr.aria-label]="days(o) + ' dias nesta etapa'">
-              <div class="ticks" [class.cold]="cold(o)">
-                @for (i of tickIndexes; track i) { <i [class.on]="tickOn(o, i)"></i> }
-              </div>
-              <span>{{ days(o) }} {{ days(o) === 1 ? 'dia' : 'dias' }}</span>
-            </div>
+            <app-thermometer [since]="o.statusChangedAt" />
             <p class="owner">{{ o.ownerName }}</p>
             <select
               class="move"
@@ -101,6 +99,46 @@
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary" (click)="cancelLoss()">Cancelar</button>
         <button type="submit" class="btn btn-primary" [disabled]="!pending.reason.trim()">Confirmar</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (newOpen()) {
+  <div class="overlay">
+    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="new-title" [formGroup]="newForm" (ngSubmit)="createOpportunity()" novalidate>
+      <h2 id="new-title">Nova negociação</h2>
+      <div class="field">
+        <label for="n-customer">Cliente</label>
+        <select id="n-customer" class="control" formControlName="customerId">
+          <option value="">Selecione…</option>
+          @for (c of customers(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+        @if (customersLoaded() && customers().length === 0) {
+          <span class="field-error">Você ainda não tem clientes. <a routerLink="/clientes">Cadastre um cliente</a> primeiro.</span>
+        } @else if (newForm.controls.customerId.touched && newForm.controls.customerId.invalid) {
+          <span class="field-error">Escolha um cliente.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="n-title">Título</label>
+        <input id="n-title" type="text" maxlength="200" formControlName="title"
+               [class.invalid]="newForm.controls.title.touched && newForm.controls.title.invalid" />
+        @if (newForm.controls.title.touched && newForm.controls.title.invalid) {
+          <span class="field-error">Informe o título da negociação.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="n-amount">Valor (R$), opcional</label>
+        <input id="n-amount" type="number" min="0" step="0.01" formControlName="amount" />
+        @if (newForm.controls.amount.invalid) { <span class="field-error">O valor não pode ser negativo.</span> }
+      </div>
+      @if (newError()) { <p class="msg error" role="alert">{{ newError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeNew()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Criando…' : 'Criar' }}</button>
       </div>
     </form>
   </div>

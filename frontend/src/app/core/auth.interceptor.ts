@@ -14,9 +14,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const auth = inject(AuthService);
-  const isAuthCall = req.url.startsWith(`${API_BASE}/auth/`);
-  const token = isAuthCall ? null : auth.token();
+  const token = auth.token();
   const authorized = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const isAuthCall = req.url.startsWith(`${API_BASE}/auth/`);
 
   return next(authorized).pipe(
     catchError((error: unknown) => {

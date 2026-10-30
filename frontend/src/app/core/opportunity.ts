@@ -70,6 +70,18 @@ export interface MoveStatusRequest {
   version: number;
 }
 
+export interface OpportunityRequest {
+  customerId: string;
+  title: string;
+  amount: number | null;
+}
+
+export interface OpportunityUpdateRequest {
+  title: string;
+  amount: number | null;
+  version: number;
+}
+
 export type Board = Partial<Record<OpportunityStatus, Opportunity[]>>;
 
 @Injectable({ providedIn: 'root' })
@@ -88,5 +100,21 @@ export class OpportunityApi {
 
   move(id: string, body: MoveStatusRequest) {
     return this.http.patch<Opportunity>(`${API_BASE}/opportunities/${id}/status`, body);
+  }
+
+  get(id: string) {
+    return this.http.get<Opportunity>(`${API_BASE}/opportunities/${id}`);
+  }
+
+  create(body: OpportunityRequest) {
+    return this.http.post<Opportunity>(`${API_BASE}/opportunities`, body);
+  }
+
+  update(id: string, body: OpportunityUpdateRequest) {
+    return this.http.put<Opportunity>(`${API_BASE}/opportunities/${id}`, body);
+  }
+
+  archive(id: string) {
+    return this.http.post<void>(`${API_BASE}/opportunities/${id}/archive`, {});
   }
 }
