@@ -39,8 +39,13 @@
       </div>
       <div class="actions">
         <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Salvando…' : 'Salvar alterações' }}</button>
-        <button type="button" class="btn btn-secondary" (click)="askArchive()">Arquivar negociação</button>
+        @if (o.status === 'WON' || o.status === 'LOST') {
+          <button type="button" class="btn btn-secondary" (click)="askArchive()">Arquivar negociação</button>
+        }
       </div>
+      @if (o.status !== 'WON' && o.status !== 'LOST') {
+        <p class="hint">Para arquivar, primeiro marque a negociação como ganha ou perdida no funil.</p>
+      }
     </form>
   </div>
 } @else {

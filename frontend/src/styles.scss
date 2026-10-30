@@ -195,3 +195,7 @@ p {
   h2, p { margin: 0; } p { color: var(--text-muted); } }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 select.control { min-height: var(--touch); border: 1px solid var(--border-field); border-radius: var(--radius-sm); background: var(--surface); font: inherit; padding: 0 8px; }
+
+.muted { color: var(--text-muted); }
+.empty { padding: 20px; border: 1px dashed var(--border-field); border-radius: var(--radius); color: var(--text-muted); }
+.pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; span { color: var(--text-muted); font-size: .875rem; } }

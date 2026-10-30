@@ -3,6 +3,12 @@
   <nav aria-label="Principal">
     <a routerLink="/funil" routerLinkActive="active">Funil</a>
     <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
+    <a routerLink="/alertas" routerLinkActive="active">
+      Alertas
+      @if (notifications.unread() > 0) {
+        <span class="badge" [attr.aria-label]="notifications.unread() + ' não lidos'">{{ notifications.unread() }}</span>
+      }
+    </a>
   </nav>
   <div class="who">
     <span class="role">{{ auth.roleLabel() }}</span>

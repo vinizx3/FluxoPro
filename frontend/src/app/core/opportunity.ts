@@ -102,6 +102,12 @@ export class OpportunityApi {
     return this.http.patch<Opportunity>(`${API_BASE}/opportunities/${id}/status`, body);
   }
 
+  closed(page: number, size = 20) {
+    return this.http.get<PageResponse<Opportunity>>(`${API_BASE}/opportunities/closed`, {
+      params: { page, size },
+    });
+  }
+
   get(id: string) {
     return this.http.get<Opportunity>(`${API_BASE}/opportunities/${id}`);
   }

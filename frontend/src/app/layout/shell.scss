@@ -33,4 +33,5 @@ nav {
 .who { display: flex; align-items: center; gap: 12px; }
 .role { color: var(--cold-muted); font-size: 0.875rem; }
 .who .btn-secondary { background: transparent; color: #fff; border-color: var(--graphite-elevated); }
+nav a .badge { margin-left: 8px; background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; font-weight: 600; }
 main { padding: 24px; }

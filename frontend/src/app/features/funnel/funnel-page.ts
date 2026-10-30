@@ -45,6 +45,12 @@ export class FunnelPage {
   protected readonly pendingLoss = signal<PendingLoss | null>(null);
   private readonly now = signal(Date.now());
 
+  protected readonly closed = signal<Opportunity[]>([]);
+  protected readonly closedTotal = signal(0);
+  protected readonly closedPage = signal(0);
+  protected readonly closedHasMore = signal(false);
+  protected readonly closedError = signal(false);
+
   protected readonly newOpen = signal(false);
   protected readonly customers = signal<Customer[]>([]);
   protected readonly customersLoaded = signal(false);
@@ -83,6 +89,22 @@ export class FunnelPage {
       },
     });
     this.loadStalled();
+    this.loadClosed(true);
+  }
+
+  /** Ganhas e perdidas, mais recentes primeiro. Se falhar, o funil continua funcionando. */
+  protected loadClosed(reset: boolean): void {
+    const page = reset ? 0 : this.closedPage() + 1;
+    this.api.closed(page).subscribe({
+      next: (result) => {
+        this.closed.set(reset ? result.content : [...this.closed(), ...result.content]);
+        this.closedTotal.set(result.totalElements);
+        this.closedPage.set(result.page);
+        this.closedHasMore.set(result.page + 1 < result.totalPages);
+        this.closedError.set(false);
+      },
+      error: () => this.closedError.set(true),
+    });
   }
 
   private loadStalled(): void {
@@ -209,6 +231,7 @@ export class FunnelPage {
               : `"${o.title}" foi para ${STATUS_LABEL[updated.status]}.`,
         );
         this.loadStalled();
+        this.loadClosed(true);
       },
       error: (err: unknown) => {
         this.movingId.set(null);

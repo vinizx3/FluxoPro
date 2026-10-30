@@ -1,0 +1,50 @@
+<div class="page-head">
+  <h1>Alertas</h1>
+  <button type="button" class="btn btn-secondary" [disabled]="state.unread() === 0" (click)="markAll()">Marcar todos como lidos</button>
+</div>
+
+<div class="tabs" role="tablist">
+  <button type="button" role="tab" [class.on]="filter() === 'unread'" [attr.aria-selected]="filter() === 'unread'" (click)="setFilter('unread')">
+    Não lidos @if (state.unread() > 0) { <span class="badge">{{ state.unread() }}</span> }
+  </button>
+  <button type="button" role="tab" [class.on]="filter() === 'all'" [attr.aria-selected]="filter() === 'all'" (click)="setFilter('all')">Todos</button>
+</div>
+
+@if (error()) { <p class="msg error" role="alert">{{ error() }}</p> }
+@if (notice()) { <p class="msg ok" role="status">{{ notice() }}</p> }
+
+@if (loading()) {
+  <p class="muted">Carregando alertas…</p>
+} @else if (result(); as page) {
+  @if (page.content.length === 0) {
+    <p class="empty">
+      @if (filter() === 'unread') { Nenhum alerta novo. Suas negociações estão em dia. } @else { Nenhum alerta ainda. }
+    </p>
+  } @else {
+    <ul class="list">
+      @for (n of page.content; track n.id) {
+        <li [class.unread]="!n.readAt">
+          <div class="text">
+            <strong>{{ n.opportunityTitle }}</strong>
+            <span>{{ n.customerName }} · parada há {{ n.daysStalled }} {{ n.daysStalled === 1 ? 'dia' : 'dias' }}</span>
+            <small>Avisado em {{ n.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+          </div>
+          <div class="actions">
+            <a class="btn btn-secondary" [routerLink]="['/negociacoes', n.opportunityId]" (click)="markRead(n)">Abrir negociação</a>
+            @if (!n.readAt) {
+              <button type="button" class="btn btn-secondary" (click)="markRead(n)">Marcar como lido</button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (page.totalPages > 1) {
+      <nav class="pager" aria-label="Paginação">
+        <button type="button" class="btn btn-secondary" [disabled]="page.page === 0" (click)="goTo(page.page - 1)">Anterior</button>
+        <span>Página {{ page.page + 1 }} de {{ page.totalPages }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="page.page + 1 >= page.totalPages" (click)="goTo(page.page + 1)">Próxima</button>
+      </nav>
+    }
+  }
+}

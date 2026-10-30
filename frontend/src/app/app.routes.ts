@@ -17,6 +17,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/funnel/funnel-page').then((m) => m.FunnelPage),
       },
       {
+        path: 'alertas',
+        loadComponent: () => import('./features/alerts/alerts-page').then((m) => m.AlertsPage),
+      },
+      {
         path: 'clientes',
         loadComponent: () => import('./features/customers/customers-page').then((m) => m.CustomersPage),
       },
