@@ -40,4 +40,12 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, UUID> 
     @EntityGraph(attributePaths = "owner")
     List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
             UUID companyId, Collection<OpportunityStatus> statuses, Instant limit);
+
+    @EntityGraph(attributePaths = {"customer", "owner"})
+    Page<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusIn(
+            UUID companyId, Collection<OpportunityStatus> statuses, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"customer", "owner"})
+    Page<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusIn(
+            UUID companyId, UUID ownerId, Collection<OpportunityStatus> statuses, Pageable pageable);
 }

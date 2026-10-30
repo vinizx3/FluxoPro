@@ -60,6 +60,13 @@ public class OpportunityController {
         service.archive(currentUser.get(), id);
     }
 
+    @GetMapping("/closed")
+    public PageResponse<OpportunityResponse> closed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.closed(currentUser.get(), page, size);
+    }
+
     @PatchMapping("/{id}/status")
     public OpportunityResponse move(@PathVariable UUID id, @Valid @RequestBody MoveStatusRequest request) {
         return service.move(currentUser.get(), id, request);

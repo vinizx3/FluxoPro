@@ -152,6 +152,26 @@ public class OpportunityService {
         }
     }
 
+    private static final List<OpportunityStatus> CLOSED_STATUSES = Arrays.stream(OpportunityStatus.values())
+            .filter(status -> !status.isOpen())
+            .toList();
+
+    @Transactional(readOnly = true)
+    public PageResponse<OpportunityResponse> closed(AuthenticatedUser user, int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
+                Sort.by("statusChangedAt").descending().and(Sort.by("id").ascending()));
+
+        Page<Opportunity> result = user.isOwner()
+                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusIn(
+                user.companyId(), CLOSED_STATUSES, pageable)
+                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusIn(
+                user.companyId(), user.id(), CLOSED_STATUSES, pageable);
+
+        return PageResponse.of(result, OpportunityResponse::from);
+    }
+
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_STALLED_DAYS = 365;
 
