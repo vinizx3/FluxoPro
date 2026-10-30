@@ -29,7 +29,11 @@ export class AuditPage {
   protected readonly types = TYPES;
   protected readonly entityLabel = ENTITY_LABEL;
   protected readonly actionLabel = ACTION_LABEL;
-  protected readonly article: Record<AuditEntityType, string> = { CUSTOMER: 'um', OPPORTUNITY: 'uma', PROJECT: 'um' };
+  protected readonly article: Record<AuditEntityType, string> = {
+    CUSTOMER: 'um',
+    OPPORTUNITY: 'uma',
+    PROJECT: 'um',
+  };
   protected readonly field = fieldLabel;
   protected readonly value = formatValue;
 
@@ -77,7 +81,9 @@ export class AuditPage {
         this.loading.set(false);
       },
       error: (err: unknown) => {
-        this.error.set(errorMessage(err, { 403: 'Somente o dono da empresa pode ver o histórico.' }));
+        this.error.set(
+          errorMessage(err, { 403: 'Somente o dono da empresa pode ver o histórico.' }),
+        );
         this.loading.set(false);
       },
     });

@@ -1,4 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
+import { DialogDirective } from '../../shared/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -24,7 +25,14 @@ interface PendingLoss {
 
 @Component({
   selector: 'app-funnel-page',
-  imports: [CurrencyPipe, FormsModule, ReactiveFormsModule, RouterLink, Thermometer],
+  imports: [
+    CurrencyPipe,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterLink,
+    Thermometer,
+    DialogDirective,
+  ],
   templateUrl: './funnel-page.html',
   styleUrl: './funnel-page.scss',
 })
@@ -157,7 +165,11 @@ export class FunnelPage {
     this.saving.set(true);
     this.newError.set(null);
     this.api
-      .create({ customerId: value.customerId ?? '', title: (value.title ?? '').trim(), amount: value.amount })
+      .create({
+        customerId: value.customerId ?? '',
+        title: (value.title ?? '').trim(),
+        amount: value.amount,
+      })
       .subscribe({
         next: (created) => {
           const next: Board = { ...this.board() };
@@ -171,7 +183,9 @@ export class FunnelPage {
         },
         error: (err: unknown) => {
           this.saving.set(false);
-          this.newError.set(errorMessage(err, { 404: 'Cliente não encontrado. Atualize a página.' }));
+          this.newError.set(
+            errorMessage(err, { 404: 'Cliente não encontrado. Atualize a página.' }),
+          );
         },
       });
   }

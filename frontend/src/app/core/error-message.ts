@@ -5,7 +5,10 @@ import { HttpErrorResponse } from '@angular/common/http';
  * A API responde em inglês (formato ProblemDetail); a interface fala português,
  * então a mensagem vem do status HTTP, e cada tela pode trocar a frase de um status.
  */
-export function errorMessage(error: unknown, overrides: Partial<Record<number, string>> = {}): string {
+export function errorMessage(
+  error: unknown,
+  overrides: Partial<Record<number, string>> = {},
+): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
       return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';

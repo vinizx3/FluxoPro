@@ -3,29 +3,54 @@
   <button type="button" class="btn btn-primary" (click)="openNew()">Novo projeto</button>
 </div>
 
-<div class="tabs" role="tablist" aria-label="Filtrar por etapa">
-  <button type="button" role="tab" [class.on]="filter() === null" [attr.aria-selected]="filter() === null" (click)="setFilter(null)">Todos</button>
+<div class="filter-tabs" role="group" aria-label="Filtrar por etapa">
+  <button
+    type="button"
+    [class.on]="filter() === null"
+    [attr.aria-pressed]="filter() === null"
+    (click)="setFilter(null)"
+  >
+    Todos
+  </button>
   @for (s of statuses; track s) {
-    <button type="button" role="tab" [class.on]="filter() === s" [attr.aria-selected]="filter() === s" (click)="setFilter(s)">{{ label[s] }}</button>
+    <button
+      type="button"
+      [class.on]="filter() === s"
+      [attr.aria-pressed]="filter() === s"
+      (click)="setFilter(s)"
+    >
+      {{ label[s] }}
+    </button>
   }
 </div>
 
-@if (error()) { <p class="msg error" role="alert">{{ error() }}</p> }
-@if (notice()) { <p class="msg ok" role="status">{{ notice() }}</p> }
+@if (error()) {
+  <p class="msg error" role="alert">{{ error() }}</p>
+}
+@if (notice()) {
+  <p class="msg ok" role="status">{{ notice() }}</p>
+}
 
 @if (loading()) {
   <p class="muted">Carregando projetos…</p>
 } @else if (result(); as page) {
   @if (page.content.length === 0) {
     <p class="empty">
-      @if (filter()) { Nenhum projeto nesta etapa. } @else { Nenhum projeto ainda. Projetos nascem sozinhos quando você marca uma negociação como ganha, ou você pode criar um à mão. }
+      @if (filter()) {
+        Nenhum projeto nesta etapa.
+      } @else {
+        Nenhum projeto ainda. Projetos nascem sozinhos quando você marca uma negociação como ganha,
+        ou você pode criar um à mão.
+      }
     </p>
   } @else {
     <ul class="list">
       @for (p of page.content; track p.id) {
         <li>
           <div class="who">
-            <strong><a [routerLink]="['/projetos', p.id]">{{ p.name }}</a></strong>
+            <strong
+              ><a [routerLink]="['/projetos', p.id]">{{ p.name }}</a></strong
+            >
             <span>
               {{ p.customerName }}
               @if (p.expectedDeliveryDate) {
@@ -33,12 +58,21 @@
               }
             </span>
           </div>
-          @if (overdue(p)) { <span class="late">Atrasado</span> }
+          @if (overdue(p)) {
+            <span class="late">Atrasado</span>
+          }
           <span class="pill" [class]="'pill ' + pill[p.status]">{{ label[p.status] }}</span>
           @if (targets(p).length > 0) {
-            <select class="control" [attr.aria-label]="'Mudar etapa de ' + p.name" [disabled]="movingId() === p.id" (change)="onSelect(p, $event)">
+            <select
+              class="control"
+              [attr.aria-label]="'Mudar etapa de ' + p.name"
+              [disabled]="movingId() === p.id"
+              (change)="onSelect(p, $event)"
+            >
               <option value="">Mudar etapa…</option>
-              @for (t of targets(p); track t) { <option [value]="t">{{ label[t] }}</option> }
+              @for (t of targets(p); track t) {
+                <option [value]="t">{{ label[t] }}</option>
+              }
             </select>
           }
           <a class="btn btn-secondary" [routerLink]="['/projetos', p.id]">Abrir</a>
@@ -48,9 +82,26 @@
 
     @if (page.totalPages > 1) {
       <nav class="pager" aria-label="Paginação">
-        <button type="button" class="btn btn-secondary" [disabled]="page.page === 0" (click)="goTo(page.page - 1)">Anterior</button>
-        <span>Página {{ page.page + 1 }} de {{ page.totalPages }} · {{ page.totalElements }} projetos</span>
-        <button type="button" class="btn btn-secondary" [disabled]="page.page + 1 >= page.totalPages" (click)="goTo(page.page + 1)">Próxima</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="page.page === 0"
+          (click)="goTo(page.page - 1)"
+        >
+          Anterior
+        </button>
+        <span
+          >Página {{ page.page + 1 }} de {{ page.totalPages }} ·
+          {{ page.totalElements }} projetos</span
+        >
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="page.page + 1 >= page.totalPages"
+          (click)="goTo(page.page + 1)"
+        >
+          Próxima
+        </button>
       </nav>
     }
   }
@@ -58,25 +109,47 @@
 
 @if (newOpen()) {
   <div class="overlay">
-    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="p-title" [formGroup]="newForm" (ngSubmit)="create()" novalidate>
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="p-title"
+      appDialog
+      (dialogClose)="closeNew()"
+      [formGroup]="newForm"
+      (ngSubmit)="create()"
+      novalidate
+    >
       <h2 id="p-title">Novo projeto</h2>
       <div class="field">
         <label for="p-customer">Cliente</label>
         <select id="p-customer" class="control" formControlName="customerId">
           <option value="">Selecione…</option>
-          @for (c of customers(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+          @for (c of customers(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
         </select>
         @if (customersLoaded() && customers().length === 0) {
-          <span class="field-error">Você ainda não tem clientes. <a routerLink="/clientes">Cadastre um cliente</a> primeiro.</span>
+          <span class="field-error"
+            >Você ainda não tem clientes.
+            <a routerLink="/clientes">Cadastre um cliente</a> primeiro.</span
+          >
         } @else if (newForm.controls.customerId.touched && newForm.controls.customerId.invalid) {
           <span class="field-error">Escolha um cliente.</span>
         }
       </div>
       <div class="field">
         <label for="p-name">Nome do projeto</label>
-        <input id="p-name" type="text" maxlength="200" formControlName="name"
-               [class.invalid]="newForm.controls.name.touched && newForm.controls.name.invalid" />
-        @if (newForm.controls.name.touched && newForm.controls.name.invalid) { <span class="field-error">Informe o nome do projeto.</span> }
+        <input
+          id="p-name"
+          type="text"
+          maxlength="200"
+          formControlName="name"
+          [class.invalid]="newForm.controls.name.touched && newForm.controls.name.invalid"
+        />
+        @if (newForm.controls.name.touched && newForm.controls.name.invalid) {
+          <span class="field-error">Informe o nome do projeto.</span>
+        }
       </div>
       <div class="field">
         <label for="p-desc">Descrição (opcional)</label>
@@ -86,10 +159,14 @@
         <label for="p-date">Data prevista de entrega (opcional)</label>
         <input id="p-date" type="date" formControlName="expectedDeliveryDate" />
       </div>
-      @if (newError()) { <p class="msg error" role="alert">{{ newError() }}</p> }
+      @if (newError()) {
+        <p class="msg error" role="alert">{{ newError() }}</p>
+      }
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary" (click)="closeNew()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Criando…' : 'Criar' }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Criando…' : 'Criar' }}
+        </button>
       </div>
     </form>
   </div>

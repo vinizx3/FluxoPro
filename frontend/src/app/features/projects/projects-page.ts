@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { DialogDirective } from '../../shared/dialog';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-projects-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, DialogDirective],
   templateUrl: './projects-page.html',
   styleUrl: './projects-page.scss',
 })
@@ -164,7 +165,9 @@ export class ProjectsPage {
         },
         error: (err: unknown) => {
           this.saving.set(false);
-          this.newError.set(errorMessage(err, { 404: 'Cliente não encontrado. Atualize a página.' }));
+          this.newError.set(
+            errorMessage(err, { 404: 'Cliente não encontrado. Atualize a página.' }),
+          );
         },
       });
   }

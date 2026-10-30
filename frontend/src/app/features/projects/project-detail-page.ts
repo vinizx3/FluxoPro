@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { DialogDirective } from '../../shared/dialog';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ import {
 
 @Component({
   selector: 'app-project-detail-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, DialogDirective],
   templateUrl: './project-detail-page.html',
   styleUrl: './project-detail-page.scss',
 })
@@ -108,7 +109,11 @@ export class ProjectDetailPage {
         },
         error: (err: unknown) => {
           this.saving.set(false);
-          this.error.set(errorMessage(err, { 409: 'Este projeto foi alterado por outra pessoa. Os dados foram recarregados.' }));
+          this.error.set(
+            errorMessage(err, {
+              409: 'Este projeto foi alterado por outra pessoa. Os dados foram recarregados.',
+            }),
+          );
           this.load();
         },
       });

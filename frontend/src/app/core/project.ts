@@ -5,7 +5,12 @@ import { PageResponse } from './opportunity';
 
 export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'DELIVERED' | 'CANCELLED';
 
-export const PROJECT_STATUSES: ProjectStatus[] = ['PLANNING', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED'];
+export const PROJECT_STATUSES: ProjectStatus[] = [
+  'PLANNING',
+  'IN_PROGRESS',
+  'DELIVERED',
+  'CANCELLED',
+];
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   PLANNING: 'Planejamento',
@@ -46,7 +51,11 @@ export function todayIso(now: Date = new Date()): string {
 }
 
 /** Atrasado: ainda aberto e com a data prevista de entrega já passada. */
-export function isOverdue(status: ProjectStatus, expectedDeliveryDate: string | null, today: string): boolean {
+export function isOverdue(
+  status: ProjectStatus,
+  expectedDeliveryDate: string | null,
+  today: string,
+): boolean {
   return isProjectOpen(status) && !!expectedDeliveryDate && expectedDeliveryDate < today;
 }
 

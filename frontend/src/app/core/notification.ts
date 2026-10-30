@@ -25,7 +25,9 @@ export function extractCount(response: unknown): number {
     return response;
   }
   if (response && typeof response === 'object') {
-    const found = Object.values(response as Record<string, unknown>).find((v) => typeof v === 'number');
+    const found = Object.values(response as Record<string, unknown>).find(
+      (v) => typeof v === 'number',
+    );
     if (typeof found === 'number') {
       return found;
     }

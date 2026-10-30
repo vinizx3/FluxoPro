@@ -15,10 +15,22 @@ import { TICKS, activeTicks, daysSince, isCold } from '../core/stall';
     </div>
   `,
   styles: `
-    .thermo { display: flex; align-items: center; gap: 10px; font-size: .8125rem; color: var(--text-muted); }
-    .ticks { flex: 1; }
-    .ticks i:not(.on) { background: var(--cold-muted); }
-    .ticks.cold i.on { background: var(--cold); }
+    .thermo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .ticks {
+      flex: 1;
+    }
+    .ticks i:not(.on) {
+      background: var(--cold-muted);
+    }
+    .ticks.cold i.on {
+      background: var(--cold);
+    }
   `,
 })
 export class Thermometer {

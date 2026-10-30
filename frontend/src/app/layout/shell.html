@@ -1,16 +1,22 @@
+<a class="skip" href="#conteudo" (click)="skipToContent($event)">Pular para o conteúdo</a>
 <header class="top">
   <a class="brand" routerLink="/funil">Fluxo<span>Pro</span></a>
   <nav aria-label="Principal">
-    <a routerLink="/funil" routerLinkActive="active">Funil</a>
-    <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
-    <a routerLink="/projetos" routerLinkActive="active">Projetos</a>
+    <a routerLink="/funil" routerLinkActive="active" ariaCurrentWhenActive="page">Funil</a>
+    <a routerLink="/clientes" routerLinkActive="active" ariaCurrentWhenActive="page">Clientes</a>
+    <a routerLink="/projetos" routerLinkActive="active" ariaCurrentWhenActive="page">Projetos</a>
     @if (auth.isOwner()) {
-      <a routerLink="/historico" routerLinkActive="active">Histórico</a>
+      <a routerLink="/equipe" routerLinkActive="active" ariaCurrentWhenActive="page">Equipe</a>
+      <a routerLink="/historico" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Histórico</a
+      >
     }
-    <a routerLink="/alertas" routerLinkActive="active">
+    <a routerLink="/alertas" routerLinkActive="active" ariaCurrentWhenActive="page">
       Alertas
       @if (notifications.unread() > 0) {
-        <span class="badge" [attr.aria-label]="notifications.unread() + ' não lidos'">{{ notifications.unread() }}</span>
+        <span class="badge" [attr.aria-label]="notifications.unread() + ' não lidos'">{{
+          notifications.unread()
+        }}</span>
       }
     </a>
   </nav>
@@ -19,6 +25,6 @@
     <button type="button" class="btn btn-secondary" (click)="auth.logout()">Sair</button>
   </div>
 </header>
-<main>
+<main id="conteudo" tabindex="-1">
   <router-outlet />
 </main>

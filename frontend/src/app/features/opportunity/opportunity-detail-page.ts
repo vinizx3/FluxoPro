@@ -1,4 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
+import { DialogDirective } from '../../shared/dialog';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,7 +10,7 @@ import { Thermometer } from '../../shared/thermometer';
 
 @Component({
   selector: 'app-opportunity-detail-page',
-  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, Thermometer],
+  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, Thermometer, DialogDirective],
   templateUrl: './opportunity-detail-page.html',
   styleUrl: './opportunity-detail-page.scss',
 })
@@ -70,18 +71,24 @@ export class OpportunityDetailPage {
     this.saving.set(true);
     this.error.set(null);
     this.notice.set(null);
-    this.api.update(o.id, { title: (value.title ?? '').trim(), amount: value.amount, version: o.version }).subscribe({
-      next: (updated) => {
-        this.apply(updated);
-        this.saving.set(false);
-        this.notice.set('Alterações salvas.');
-      },
-      error: (err: unknown) => {
-        this.saving.set(false);
-        this.error.set(errorMessage(err, { 409: 'Esta negociação foi alterada por outra pessoa. Os dados foram recarregados.' }));
-        this.load();
-      },
-    });
+    this.api
+      .update(o.id, { title: (value.title ?? '').trim(), amount: value.amount, version: o.version })
+      .subscribe({
+        next: (updated) => {
+          this.apply(updated);
+          this.saving.set(false);
+          this.notice.set('Alterações salvas.');
+        },
+        error: (err: unknown) => {
+          this.saving.set(false);
+          this.error.set(
+            errorMessage(err, {
+              409: 'Esta negociação foi alterada por outra pessoa. Os dados foram recarregados.',
+            }),
+          );
+          this.load();
+        },
+      });
   }
 
   protected askArchive(): void {

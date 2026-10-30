@@ -35,3 +35,33 @@ nav {
 .who .btn-secondary { background: transparent; color: #fff; border-color: var(--graphite-elevated); }
 nav a .badge { margin-left: 8px; background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; font-weight: 600; }
 main { padding: 24px; }
+
+/* Celular e tablet estreito: marca e usuário na primeira linha, menu rolável na segunda */
+@media (max-width: 900px) {
+  .top { flex-wrap: wrap; gap: 0 12px; padding: 8px 16px 0; }
+  .who { margin-left: auto; }
+  nav {
+    order: 3;
+    flex: 1 0 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+  main { padding: 16px; }
+}
+
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 20;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--graphite);
+  font-weight: 600;
+  &:focus { top: 8px; }
+}
+main:focus { outline: none; }

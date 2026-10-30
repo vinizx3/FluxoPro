@@ -2,10 +2,16 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_BASE } from './api';
 
-export type OpportunityStatus = 'LEAD' | 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+export type OpportunityStatus =
+  'LEAD' | 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
 
 /** Etapas abertas, na ordem das colunas do funil. */
-export const OPEN_STATUSES: OpportunityStatus[] = ['LEAD', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'];
+export const OPEN_STATUSES: OpportunityStatus[] = [
+  'LEAD',
+  'QUALIFICATION',
+  'PROPOSAL',
+  'NEGOTIATION',
+];
 
 export const STATUS_LABEL: Record<OpportunityStatus, string> = {
   LEAD: 'Lead',

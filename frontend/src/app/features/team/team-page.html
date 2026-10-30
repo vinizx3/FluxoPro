@@ -1,0 +1,145 @@
+<div class="page-head">
+  <h1>Equipe</h1>
+  <button type="button" class="btn btn-primary" (click)="openAdd()">Adicionar vendedor</button>
+</div>
+<p class="muted lead">
+  Cada vendedor vê apenas as próprias negociações e projetos. Você, como dono, vê tudo.
+</p>
+
+@if (error()) {
+  <p class="msg error" role="alert">{{ error() }}</p>
+}
+@if (notice()) {
+  <p class="msg ok" role="status">{{ notice() }}</p>
+}
+
+@if (loading()) {
+  <p class="muted">Carregando equipe…</p>
+} @else {
+  <ul class="list">
+    @for (m of members(); track m.id) {
+      <li [class.off]="!m.active">
+        <div class="who">
+          <strong>{{ m.name }}</strong>
+          <span>{{ m.email }} · desde {{ m.createdAt | date: 'dd/MM/yyyy' }}</span>
+        </div>
+        <span
+          class="pill"
+          [class.dark]="m.role === 'OWNER'"
+          [class.cancelled]="m.role === 'SELLER'"
+          >{{ m.role === 'OWNER' ? 'Dono' : 'Vendedor' }}</span
+        >
+        @if (!m.active) {
+          <span class="pill lost">Desativado</span>
+        }
+        @if (m.role === 'SELLER') {
+          @if (m.active) {
+            <button type="button" class="btn btn-secondary" (click)="askDeactivate(m)">
+              Desativar
+            </button>
+          } @else {
+            <button type="button" class="btn btn-secondary" (click)="setActive(m, true)">
+              Reativar
+            </button>
+          }
+        }
+      </li>
+    }
+  </ul>
+}
+
+@if (addOpen()) {
+  <div class="overlay">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="t-title"
+      appDialog
+      (dialogClose)="closeAdd()"
+      [formGroup]="form"
+      (ngSubmit)="create()"
+      novalidate
+    >
+      <h2 id="t-title">Adicionar vendedor</h2>
+      <div class="field">
+        <label for="t-name">Nome</label>
+        <input
+          id="t-name"
+          type="text"
+          maxlength="150"
+          autocomplete="off"
+          formControlName="name"
+          [class.invalid]="form.controls.name.touched && form.controls.name.invalid"
+        />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <span class="field-error">Informe o nome.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="t-email">E-mail</label>
+        <input
+          id="t-email"
+          type="email"
+          maxlength="255"
+          autocomplete="off"
+          formControlName="email"
+          [class.invalid]="form.controls.email.touched && form.controls.email.invalid"
+        />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="field-error">Informe um e-mail válido.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="t-pass">Senha inicial</label>
+        <input
+          id="t-pass"
+          type="password"
+          maxlength="72"
+          autocomplete="new-password"
+          formControlName="password"
+          [class.invalid]="form.controls.password.touched && form.controls.password.invalid"
+        />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="field-error">A senha precisa ter pelo menos 8 caracteres.</span>
+        }
+      </div>
+      @if (formError()) {
+        <p class="msg error" role="alert">{{ formError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeAdd()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Adicionando…' : 'Adicionar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (deactivating(); as member) {
+  <div class="overlay">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="d-title"
+      appDialog
+      (dialogClose)="cancelDeactivate()"
+    >
+      <h2 id="d-title">Desativar vendedor</h2>
+      <p>
+        "{{ member.name }}" não conseguirá mais entrar. As negociações dele continuam com você. Você
+        pode reativar depois.
+      </p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelDeactivate()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="confirmDeactivate()">
+          Desativar
+        </button>
+      </div>
+    </div>
+  </div>
+}

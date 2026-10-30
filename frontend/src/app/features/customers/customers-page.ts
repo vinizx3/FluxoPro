@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { DialogDirective } from '../../shared/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, debounceTime } from 'rxjs';
@@ -11,7 +12,7 @@ const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-customers-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DialogDirective],
   templateUrl: './customers-page.html',
   styleUrl: './customers-page.scss',
 })
@@ -40,11 +41,13 @@ export class CustomersPage {
   });
 
   constructor() {
-    this.search$.pipe(debounceTime(300), takeUntilDestroyed(inject(DestroyRef))).subscribe((term) => {
-      this.search.set(term);
-      this.pageIndex.set(0);
-      this.load();
-    });
+    this.search$
+      .pipe(debounceTime(300), takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((term) => {
+        this.search.set(term);
+        this.pageIndex.set(0);
+        this.load();
+      });
     this.load();
   }
 
@@ -79,7 +82,11 @@ export class CustomersPage {
   }
 
   protected openEdit(customer: Customer): void {
-    this.form.reset({ name: customer.name, email: customer.email ?? '', phone: customer.phone ?? '' });
+    this.form.reset({
+      name: customer.name,
+      email: customer.email ?? '',
+      phone: customer.phone ?? '',
+    });
     this.formError.set(null);
     this.editing.set(customer);
   }
@@ -98,22 +105,35 @@ export class CustomersPage {
       return;
     }
     const value = this.form.getRawValue();
-    const body = { name: value.name.trim(), email: blankToNull(value.email), phone: blankToNull(value.phone) };
+    const body = {
+      name: value.name.trim(),
+      email: blankToNull(value.email),
+      phone: blankToNull(value.phone),
+    };
     this.saving.set(true);
     this.formError.set(null);
 
-    const request = target === 'new' ? this.api.create(body) : this.api.update(target.id, { ...body, version: target.version });
+    const request =
+      target === 'new'
+        ? this.api.create(body)
+        : this.api.update(target.id, { ...body, version: target.version });
     request.subscribe({
       next: (saved) => {
         this.saving.set(false);
         this.editing.set(null);
-        this.notice.set(target === 'new' ? `Cliente "${saved.name}" cadastrado.` : `Cliente "${saved.name}" atualizado.`);
+        this.notice.set(
+          target === 'new'
+            ? `Cliente "${saved.name}" cadastrado.`
+            : `Cliente "${saved.name}" atualizado.`,
+        );
         this.load();
       },
       error: (err: unknown) => {
         this.saving.set(false);
         this.formError.set(
-          errorMessage(err, { 409: 'Este cliente foi alterado por outra pessoa. Feche, recarregue a lista e tente de novo.' }),
+          errorMessage(err, {
+            409: 'Este cliente foi alterado por outra pessoa. Feche, recarregue a lista e tente de novo.',
+          }),
         );
       },
     });

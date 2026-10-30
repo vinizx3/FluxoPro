@@ -14,7 +14,9 @@
 }
 
 <section class="cooling" aria-labelledby="cooling-title">
-  <h2 id="cooling-title">Esfriando agora <span>{{ stalled().length }}</span></h2>
+  <h2 id="cooling-title">
+    Esfriando agora <span>{{ stalled().length }}</span>
+  </h2>
   @if (stalled().length === 0) {
     <p class="cooling-empty">Nenhuma negociação parada há {{ stallDays }} dias ou mais.</p>
   } @else {
@@ -42,13 +44,17 @@
     @for (col of columns(); track col.status) {
       <section class="col" [attr.aria-label]="label[col.status]">
         <header>
-          <h2>{{ label[col.status] }} <span class="count">{{ col.items.length }}</span></h2>
+          <h2>
+            {{ label[col.status] }} <span class="count">{{ col.items.length }}</span>
+          </h2>
           <span class="total">{{ col.total | currency: 'BRL' : 'symbol' : '1.0-0' }}</span>
         </header>
 
         @for (o of col.items; track o.id) {
           <article class="card" [class.cold]="cold(o)" [id]="'opp-' + o.id" tabindex="-1">
-            <h3><a [routerLink]="['/negociacoes', o.id]">{{ o.title }}</a></h3>
+            <h3>
+              <a [routerLink]="['/negociacoes', o.id]">{{ o.title }}</a>
+            </h3>
             <p class="customer">{{ o.customerName }}</p>
             <p class="amount">
               @if (o.amount !== null) {
@@ -80,11 +86,15 @@
 }
 
 <section class="closed" aria-labelledby="closed-title">
-  <h2 id="closed-title">Encerradas <span class="count">{{ closedTotal() }}</span></h2>
+  <h2 id="closed-title">
+    Encerradas <span class="count">{{ closedTotal() }}</span>
+  </h2>
   @if (closedError()) {
     <p class="muted">Não foi possível carregar as negociações encerradas.</p>
   } @else if (closed().length === 0) {
-    <p class="empty">Nenhuma negociação encerrada. Quando você marcar uma como ganha ou perdida, ela aparece aqui.</p>
+    <p class="empty">
+      Nenhuma negociação encerrada. Quando você marcar uma como ganha ou perdida, ela aparece aqui.
+    </p>
   } @else {
     <ul class="closed-list">
       @for (o of closed(); track o.id) {
@@ -93,24 +103,40 @@
             <strong>{{ o.title }}</strong>
             <span>
               {{ o.customerName }}
-              @if (o.status === 'LOST' && o.lostReason) { · {{ o.lostReason }} }
+              @if (o.status === 'LOST' && o.lostReason) {
+                · {{ o.lostReason }}
+              }
             </span>
           </div>
-          <span class="pill" [class.won]="o.status === 'WON'" [class.lost]="o.status === 'LOST'">{{ label[o.status] }}</span>
-          @if (o.amount !== null) { <span class="amt">{{ o.amount | currency: 'BRL' }}</span> }
+          <span class="pill" [class.won]="o.status === 'WON'" [class.lost]="o.status === 'LOST'">{{
+            label[o.status]
+          }}</span>
+          @if (o.amount !== null) {
+            <span class="amt">{{ o.amount | currency: 'BRL' }}</span>
+          }
           <a class="btn btn-secondary" [routerLink]="['/negociacoes', o.id]">Abrir</a>
         </li>
       }
     </ul>
     @if (closedHasMore()) {
-      <button type="button" class="btn btn-secondary more" (click)="loadClosed(false)">Ver mais</button>
+      <button type="button" class="btn btn-secondary more" (click)="loadClosed(false)">
+        Ver mais
+      </button>
     }
   }
 </section>
 
 @if (pendingLoss(); as pending) {
   <div class="overlay">
-    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="loss-title" (ngSubmit)="confirmLoss()">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="loss-title"
+      appDialog
+      (dialogClose)="cancelLoss()"
+      (ngSubmit)="confirmLoss()"
+    >
       <h2 id="loss-title">Marcar como perdida</h2>
       <p>{{ pending.opportunity.title }} — {{ pending.opportunity.customerName }}</p>
       <div class="field">
@@ -120,14 +146,15 @@
           name="reason"
           type="text"
           maxlength="255"
-          autofocus
           [ngModel]="pending.reason"
           (ngModelChange)="setReason($event)"
         />
       </div>
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary" (click)="cancelLoss()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="!pending.reason.trim()">Confirmar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!pending.reason.trim()">
+          Confirmar
+        </button>
       </div>
     </form>
   </div>
@@ -135,7 +162,17 @@
 
 @if (newOpen()) {
   <div class="overlay">
-    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="new-title" [formGroup]="newForm" (ngSubmit)="createOpportunity()" novalidate>
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-title"
+      appDialog
+      (dialogClose)="closeNew()"
+      [formGroup]="newForm"
+      (ngSubmit)="createOpportunity()"
+      novalidate
+    >
       <h2 id="new-title">Nova negociação</h2>
       <div class="field">
         <label for="n-customer">Cliente</label>
@@ -146,15 +183,23 @@
           }
         </select>
         @if (customersLoaded() && customers().length === 0) {
-          <span class="field-error">Você ainda não tem clientes. <a routerLink="/clientes">Cadastre um cliente</a> primeiro.</span>
+          <span class="field-error"
+            >Você ainda não tem clientes.
+            <a routerLink="/clientes">Cadastre um cliente</a> primeiro.</span
+          >
         } @else if (newForm.controls.customerId.touched && newForm.controls.customerId.invalid) {
           <span class="field-error">Escolha um cliente.</span>
         }
       </div>
       <div class="field">
         <label for="n-title">Título</label>
-        <input id="n-title" type="text" maxlength="200" formControlName="title"
-               [class.invalid]="newForm.controls.title.touched && newForm.controls.title.invalid" />
+        <input
+          id="n-title"
+          type="text"
+          maxlength="200"
+          formControlName="title"
+          [class.invalid]="newForm.controls.title.touched && newForm.controls.title.invalid"
+        />
         @if (newForm.controls.title.touched && newForm.controls.title.invalid) {
           <span class="field-error">Informe o título da negociação.</span>
         }
@@ -162,12 +207,18 @@
       <div class="field">
         <label for="n-amount">Valor (R$), opcional</label>
         <input id="n-amount" type="number" min="0" step="0.01" formControlName="amount" />
-        @if (newForm.controls.amount.invalid) { <span class="field-error">O valor não pode ser negativo.</span> }
+        @if (newForm.controls.amount.invalid) {
+          <span class="field-error">O valor não pode ser negativo.</span>
+        }
       </div>
-      @if (newError()) { <p class="msg error" role="alert">{{ newError() }}</p> }
+      @if (newError()) {
+        <p class="msg error" role="alert">{{ newError() }}</p>
+      }
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary" (click)="closeNew()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Criando…' : 'Criar' }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Criando…' : 'Criar' }}
+        </button>
       </div>
     </form>
   </div>

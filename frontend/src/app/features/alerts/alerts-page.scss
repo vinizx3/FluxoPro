@@ -1,6 +1,3 @@
-.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px;
-  button { min-height: var(--touch); padding: 0 16px; border: 0; border-radius: var(--radius-sm); background: transparent; font: inherit; font-weight: 600; color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-    &.on { background: var(--graphite); color: #fff; } } }
 .badge { background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;
   li { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;

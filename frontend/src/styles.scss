@@ -219,3 +219,38 @@ select.control { min-height: var(--touch); border: 1px solid var(--border-field)
   &.cancelled { background: var(--bg); color: var(--text-muted); } }
 
 dd a, .field-error a { color: var(--hot-action); font-weight: 600; }
+
+.pill.dark { background: var(--graphite); color: #fff; }
+
+/* Botões de filtro (abas) das listas: numa linha só, rolando de lado quando não cabe */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+  button {
+    flex: none;
+    min-height: var(--touch);
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    &.on { background: var(--graphite); color: #fff; }
+  }
+}
+.badge { background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; }
