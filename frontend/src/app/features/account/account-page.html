@@ -1,0 +1,78 @@
+<div class="page-head">
+  <h1>Minha conta</h1>
+</div>
+<p class="muted lead">Você está entrando como {{ auth.roleLabel() }}.</p>
+
+<form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h2>Trocar senha</h2>
+
+  <div class="field">
+    <label for="a-current">Senha atual</label>
+    <input
+      id="a-current"
+      type="password"
+      maxlength="72"
+      autocomplete="current-password"
+      formControlName="currentPassword"
+      [class.invalid]="
+        form.controls.currentPassword.touched && form.controls.currentPassword.invalid
+      "
+    />
+    @if (form.controls.currentPassword.touched && form.controls.currentPassword.invalid) {
+      <span class="field-error">Informe a senha atual.</span>
+    }
+  </div>
+
+  <div class="field">
+    <label for="a-new">Nova senha</label>
+    <input
+      id="a-new"
+      type="password"
+      maxlength="72"
+      autocomplete="new-password"
+      formControlName="newPassword"
+      [class.invalid]="form.controls.newPassword.touched && form.controls.newPassword.invalid"
+    />
+    @if (form.controls.newPassword.touched && form.controls.newPassword.invalid) {
+      <span class="field-error"
+        >A nova senha precisa ter pelo menos {{ passwordMin }} caracteres.</span
+      >
+    }
+  </div>
+
+  <div class="field">
+    <label for="a-confirm">Repita a nova senha</label>
+    <input
+      id="a-confirm"
+      type="password"
+      maxlength="72"
+      autocomplete="new-password"
+      formControlName="confirmPassword"
+      [class.invalid]="
+        form.controls.confirmPassword.touched &&
+        (form.controls.confirmPassword.invalid || form.hasError('mismatch'))
+      "
+    />
+    @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
+      <span class="field-error">Repita a nova senha.</span>
+    } @else if (form.controls.confirmPassword.touched && form.hasError('mismatch')) {
+      <span class="field-error">As senhas não são iguais.</span>
+    }
+  </div>
+
+  @if (form.touched && form.hasError('unchanged')) {
+    <p class="field-error">A nova senha precisa ser diferente da atual.</p>
+  }
+  @if (error()) {
+    <p class="msg error" role="alert">{{ error() }}</p>
+  }
+  @if (notice()) {
+    <p class="msg ok" role="status">{{ notice() }}</p>
+  }
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Salvando…' : 'Trocar senha' }}
+    </button>
+  </div>
+</form>

@@ -42,6 +42,11 @@ export const routes: Routes = [
           import('./features/projects/project-detail-page').then((m) => m.ProjectDetailPage),
       },
       {
+        path: 'conta',
+        title: 'Minha conta · FluxoPro',
+        loadComponent: () => import('./features/account/account-page').then((m) => m.AccountPage),
+      },
+      {
         path: 'equipe',
         title: 'Equipe · FluxoPro',
         canActivate: [ownerGuard],

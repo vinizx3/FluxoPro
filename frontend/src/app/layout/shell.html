@@ -21,7 +21,9 @@
     </a>
   </nav>
   <div class="who">
-    <span class="role">{{ auth.roleLabel() }}</span>
+    <a class="role" routerLink="/conta" routerLinkActive="active" ariaCurrentWhenActive="page"
+      >{{ auth.roleLabel() }} · Minha conta</a
+    >
     <button type="button" class="btn btn-secondary" (click)="auth.logout()">Sair</button>
   </div>
 </header>
