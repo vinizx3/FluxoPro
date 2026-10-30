@@ -60,4 +60,8 @@ public class User {
     public Role getRole() { return role; }
     public boolean isActive() { return active; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public void setActive(boolean active) { this.active = active; }
+
+    public void changePasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }
