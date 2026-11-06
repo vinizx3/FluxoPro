@@ -40,6 +40,7 @@ export interface Opportunity {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string | null;
   ownerId: string;
   ownerName: string;
   title: string;
@@ -56,6 +57,7 @@ export interface StalledOpportunity {
   title: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string | null;
   amount: number | null;
   status: OpportunityStatus;
   statusChangedAt: string;

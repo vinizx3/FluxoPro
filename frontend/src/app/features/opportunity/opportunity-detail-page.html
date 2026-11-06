@@ -20,7 +20,19 @@
       <h2>Resumo</h2>
       <dl>
         <dt>Cliente</dt>
-        <dd>{{ o.customerName }}</dd>
+        <dd>
+          {{ o.customerName }}
+          @if (wa(o); as link) {
+            <a
+              class="wa"
+              [href]="link"
+              target="_blank"
+              rel="noopener noreferrer"
+              [attr.aria-label]="'Chamar ' + o.customerName + ' no WhatsApp (abre em nova aba)'"
+              >· WhatsApp</a
+            >
+          }
+        </dd>
         <dt>Responsável</dt>
         <dd>{{ o.ownerName }}</dd>
         <dt>Valor</dt>

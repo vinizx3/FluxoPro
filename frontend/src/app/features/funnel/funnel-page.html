@@ -34,6 +34,16 @@
           </div>
           <div class="cooling-meta">
             <span class="days">{{ s.daysStalled }} dias parada</span>
+            @if (wa(s); as link) {
+              <a
+                class="link wa"
+                [href]="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                [attr.aria-label]="'Chamar ' + s.customerName + ' no WhatsApp (abre em nova aba)'"
+                >WhatsApp</a
+              >
+            }
             <button type="button" class="link" (click)="showInFunnel(s.id)">Ver no funil</button>
           </div>
         </li>
@@ -69,7 +79,20 @@
               }
             </p>
             <app-thermometer [since]="o.statusChangedAt" />
-            <p class="owner">{{ o.ownerName }}</p>
+            <p class="owner">
+              {{ o.ownerName }}
+              @if (wa(o); as link) {
+                ·
+                <a
+                  class="wa"
+                  [href]="link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="'Chamar ' + o.customerName + ' no WhatsApp (abre em nova aba)'"
+                  >WhatsApp</a
+                >
+              }
+            </p>
             <select
               class="move"
               [attr.aria-label]="'Mover ' + o.title + ' para'"

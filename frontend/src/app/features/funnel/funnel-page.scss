@@ -46,3 +46,8 @@
 .more { margin-top: 12px; }
 
 .at-risk { margin-left: 12px; font-size: .875rem; font-weight: 600; color: var(--hot-vivid); }
+
+.wa { color: #1f7a4d; font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
+.cooling .wa { color: #7ddca5; }
+
+.cooling a.link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }

@@ -268,3 +268,6 @@ dd a, .field-error a { color: var(--hot-action); font-weight: 600; }
   text-decoration: none;
   &:hover { background: #18633e; }
 }
+
+a.wa { color: #1f7a4d; font-weight: 600; text-decoration: none; }
+a.wa:hover { text-decoration: underline; }

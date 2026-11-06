@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/error-message';
 import { Opportunity, OpportunityApi, STATUS_LABEL } from '../../core/opportunity';
 import { Thermometer } from '../../shared/thermometer';
+import { followUpUrl } from '../../core/whatsapp';
 
 @Component({
   selector: 'app-opportunity-detail-page',
@@ -56,6 +57,10 @@ export class OpportunityDetailPage {
   private apply(o: Opportunity): void {
     this.opportunity.set(o);
     this.form.reset({ title: o.title, amount: o.amount });
+  }
+
+  protected wa(o: Opportunity): string | null {
+    return followUpUrl(o.customerPhone, o.title);
   }
 
   protected save(): void {

@@ -1,4 +1,4 @@
-import { whatsappUrl } from './whatsapp';
+import { followUpUrl, whatsappUrl } from './whatsapp';
 
 describe('whatsappUrl', () => {
   it('adds the country code to a local number', () => {
@@ -20,5 +20,17 @@ describe('whatsappUrl', () => {
     expect(whatsappUrl(null)).toBeNull();
     expect(whatsappUrl('')).toBeNull();
     expect(whatsappUrl('12345')).toBeNull();
+  });
+});
+
+describe('followUpUrl', () => {
+  it('pre-fills a message that mentions the opportunity', () => {
+    const url = followUpUrl('61999990000', 'Reforma da fachada') ?? '';
+    expect(url.startsWith('https://wa.me/5561999990000?text=')).toBe(true);
+    expect(decodeURIComponent(url)).toContain('"Reforma da fachada"');
+  });
+
+  it('is null without a valid phone', () => {
+    expect(followUpUrl(null, 'Qualquer')).toBeNull();
   });
 });

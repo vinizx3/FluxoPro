@@ -17,6 +17,7 @@ import {
 } from '../../core/opportunity';
 import { STALL_DAYS, daysSince, isCold, sumAmounts } from '../../core/stall';
 import { Thermometer } from '../../shared/thermometer';
+import { followUpUrl } from '../../core/whatsapp';
 
 interface PendingLoss {
   opportunity: Opportunity;
@@ -69,6 +70,10 @@ export class FunnelPage {
     title: ['', [Validators.required, Validators.maxLength(200)]],
     amount: this.fb.control<number | null>(null, Validators.min(0)),
   });
+
+  protected wa(item: { customerPhone?: string | null; title: string }): string | null {
+    return followUpUrl(item.customerPhone, item.title);
+  }
 
   protected readonly stalledAmount = computed(() => sumAmounts(this.stalled()));
 

@@ -20,3 +20,8 @@ export function whatsappUrl(phone: string | null | undefined, message?: string):
   const base = `https://wa.me/${digits}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
+
+/** Link do WhatsApp com uma mensagem inicial sobre a negociação. */
+export function followUpUrl(phone: string | null | undefined, title: string): string | null {
+  return whatsappUrl(phone, `Olá! Tudo bem? Passando para falar sobre "${title}".`);
+}
