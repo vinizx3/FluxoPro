@@ -3,12 +3,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/error-message';
+import { PasswordField } from '../../shared/password-field';
 
 type Mode = 'login' | 'register';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule],
+  imports: [PasswordField, ReactiveFormsModule],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })

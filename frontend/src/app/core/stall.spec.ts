@@ -1,4 +1,4 @@
-import { activeTicks, daysSince, isCold } from './stall';
+import { activeTicks, daysSince, isCold, sumAmounts } from './stall';
 import { allowedTargets } from './opportunity';
 
 describe('stall helpers', () => {
@@ -31,5 +31,15 @@ describe('allowedTargets', () => {
     expect(allowedTargets('LEAD')).toEqual(['QUALIFICATION', 'LOST']);
     expect(allowedTargets('NEGOTIATION')).toEqual(['PROPOSAL', 'WON', 'LOST']);
     expect(allowedTargets('WON')).toEqual([]);
+  });
+});
+
+describe('sumAmounts', () => {
+  it('adds the amounts and treats missing values as zero', () => {
+    expect(sumAmounts([{ amount: 67000 }, { amount: null }, { amount: 120000 }])).toBe(187000);
+  });
+
+  it('is zero for an empty list', () => {
+    expect(sumAmounts([])).toBe(0);
   });
 });

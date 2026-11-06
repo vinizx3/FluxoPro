@@ -4,10 +4,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { errorMessage } from '../../core/error-message';
 import { TeamApi, TeamMember } from '../../core/team';
+import { PasswordField } from '../../shared/password-field';
 
 @Component({
   selector: 'app-team-page',
-  imports: [DatePipe, ReactiveFormsModule, DialogDirective],
+  imports: [PasswordField, DatePipe, ReactiveFormsModule, DialogDirective],
   templateUrl: './team-page.html',
   styleUrl: './team-page.scss',
 })

@@ -40,6 +40,16 @@
             <span>{{ c.email || 'Sem e-mail' }} · {{ c.phone || 'Sem telefone' }}</span>
           </div>
           <div class="actions">
+            @if (whatsapp(c); as wa) {
+              <a
+                class="btn btn-whatsapp"
+                [href]="wa"
+                target="_blank"
+                rel="noopener noreferrer"
+                [attr.aria-label]="'Chamar ' + c.name + ' no WhatsApp (abre em nova aba)'"
+                >WhatsApp</a
+              >
+            }
             <button type="button" class="btn btn-secondary" (click)="openEdit(c)">Editar</button>
             <button type="button" class="btn btn-secondary" (click)="askArchive(c)">
               Arquivar
@@ -94,6 +104,7 @@
         <label for="c-name">Nome</label>
         <input
           id="c-name"
+          placeholder="Ex.: Construtora Alvorada"
           type="text"
           maxlength="150"
           formControlName="name"
@@ -107,6 +118,7 @@
         <label for="c-email">E-mail (opcional)</label>
         <input
           id="c-email"
+          placeholder="contato@empresa.com.br"
           type="email"
           maxlength="255"
           formControlName="email"
@@ -118,7 +130,13 @@
       </div>
       <div class="field">
         <label for="c-phone">Telefone (opcional)</label>
-        <input id="c-phone" type="tel" maxlength="30" formControlName="phone" />
+        <input
+          id="c-phone"
+          placeholder="(61) 99999-0000"
+          type="tel"
+          maxlength="30"
+          formControlName="phone"
+        />
       </div>
       @if (formError()) {
         <p class="msg error" role="alert">{{ formError() }}</p>

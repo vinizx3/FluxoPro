@@ -8,10 +8,11 @@ import {
 } from '../../core/account';
 import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/error-message';
+import { PasswordField } from '../../shared/password-field';
 
 @Component({
   selector: 'app-account-page',
-  imports: [ReactiveFormsModule],
+  imports: [PasswordField, ReactiveFormsModule],
   templateUrl: './account-page.html',
   styleUrl: './account-page.scss',
 })

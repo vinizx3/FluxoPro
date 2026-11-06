@@ -66,6 +66,7 @@
         <label for="t-name">Nome</label>
         <input
           id="t-name"
+          placeholder="Ex.: João Santos"
           type="text"
           maxlength="150"
           autocomplete="off"
@@ -80,6 +81,7 @@
         <label for="t-email">E-mail</label>
         <input
           id="t-email"
+          placeholder="vendedor@empresa.com.br"
           type="email"
           maxlength="255"
           autocomplete="off"
@@ -92,13 +94,13 @@
       </div>
       <div class="field">
         <label for="t-pass">Senha inicial</label>
-        <input
-          id="t-pass"
-          type="password"
-          maxlength="72"
-          autocomplete="new-password"
+        <app-password-field
+          fieldId="t-pass"
+          autocompleteHint="new-password"
+          placeholder="Mínimo de 8 caracteres"
+          [maxLength]="72"
           formControlName="password"
-          [class.invalid]="form.controls.password.touched && form.controls.password.invalid"
+          [invalid]="form.controls.password.touched && form.controls.password.invalid"
         />
         @if (form.controls.password.touched && form.controls.password.invalid) {
           <span class="field-error">A senha precisa ter pelo menos 8 caracteres.</span>

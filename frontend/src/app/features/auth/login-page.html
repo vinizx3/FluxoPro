@@ -28,6 +28,7 @@
           <label for="l-email">E-mail</label>
           <input
             id="l-email"
+            placeholder="voce@empresa.com.br"
             type="email"
             autocomplete="email"
             formControlName="email"
@@ -39,14 +40,12 @@
         </div>
         <div class="field">
           <label for="l-pass">Senha</label>
-          <input
-            id="l-pass"
-            type="password"
-            autocomplete="current-password"
+          <app-password-field
+            fieldId="l-pass"
+            autocompleteHint="current-password"
+            placeholder="Sua senha"
             formControlName="password"
-            [class.invalid]="
-              loginForm.controls.password.touched && loginForm.controls.password.invalid
-            "
+            [invalid]="loginForm.controls.password.touched && loginForm.controls.password.invalid"
           />
           @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
             <span class="field-error">Informe a senha.</span>
@@ -65,6 +64,7 @@
           <label for="r-company">Nome da empresa</label>
           <input
             id="r-company"
+            placeholder="Ex.: Silva Engenharia"
             type="text"
             autocomplete="organization"
             formControlName="companyName"
@@ -82,6 +82,7 @@
           <label for="r-name">Seu nome</label>
           <input
             id="r-name"
+            placeholder="Ex.: Maria Silva"
             type="text"
             autocomplete="name"
             formControlName="name"
@@ -97,6 +98,7 @@
           <label for="r-email">E-mail</label>
           <input
             id="r-email"
+            placeholder="voce@empresa.com.br"
             type="email"
             autocomplete="email"
             formControlName="email"
@@ -110,12 +112,12 @@
         </div>
         <div class="field">
           <label for="r-pass">Senha</label>
-          <input
-            id="r-pass"
-            type="password"
-            autocomplete="new-password"
+          <app-password-field
+            fieldId="r-pass"
+            autocompleteHint="new-password"
+            placeholder="Mínimo de 8 caracteres"
             formControlName="password"
-            [class.invalid]="
+            [invalid]="
               registerForm.controls.password.touched && registerForm.controls.password.invalid
             "
           />

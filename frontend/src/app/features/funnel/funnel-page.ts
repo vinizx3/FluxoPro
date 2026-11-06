@@ -15,7 +15,7 @@ import {
   StalledOpportunity,
   allowedTargets,
 } from '../../core/opportunity';
-import { STALL_DAYS, daysSince, isCold } from '../../core/stall';
+import { STALL_DAYS, daysSince, isCold, sumAmounts } from '../../core/stall';
 import { Thermometer } from '../../shared/thermometer';
 
 interface PendingLoss {
@@ -69,6 +69,8 @@ export class FunnelPage {
     title: ['', [Validators.required, Validators.maxLength(200)]],
     amount: this.fb.control<number | null>(null, Validators.min(0)),
   });
+
+  protected readonly stalledAmount = computed(() => sumAmounts(this.stalled()));
 
   protected readonly columns = computed(() =>
     OPEN_STATUSES.map((status) => {

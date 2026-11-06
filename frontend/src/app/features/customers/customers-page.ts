@@ -7,6 +7,7 @@ import { Customer, CustomerApi } from '../../core/customer';
 import { errorMessage } from '../../core/error-message';
 import { blankToNull } from '../../core/forms';
 import { PageResponse } from '../../core/opportunity';
+import { whatsappUrl } from '../../core/whatsapp';
 
 const PAGE_SIZE = 20;
 
@@ -79,6 +80,10 @@ export class CustomersPage {
     this.form.reset({ name: '', email: '', phone: '' });
     this.formError.set(null);
     this.editing.set('new');
+  }
+
+  protected whatsapp(customer: Customer): string | null {
+    return whatsappUrl(customer.phone);
   }
 
   protected openEdit(customer: Customer): void {

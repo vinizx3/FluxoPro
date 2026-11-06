@@ -20,3 +20,8 @@ export function isCold(days: number): boolean {
 export function activeTicks(days: number): number {
   return Math.min(TICKS, Math.max(0, TICKS - days));
 }
+
+/** Soma, em reais, o valor das negociações informadas (as sem valor contam como zero). */
+export function sumAmounts(items: { amount: number | null }[]): number {
+  return items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+}

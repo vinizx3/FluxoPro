@@ -254,3 +254,17 @@ dd a, .field-error a { color: var(--hot-action); font-weight: 600; }
   }
 }
 .badge { background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; }
+
+/* Dicas de preenchimento: visíveis, mas claramente diferentes de um texto digitado */
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+.btn-whatsapp {
+  background: #1f7a4d;
+  border: 1px solid #1f7a4d;
+  color: #fff;
+  text-decoration: none;
+  &:hover { background: #18633e; }
+}

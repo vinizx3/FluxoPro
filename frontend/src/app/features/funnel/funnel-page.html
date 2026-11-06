@@ -16,6 +16,11 @@
 <section class="cooling" aria-labelledby="cooling-title">
   <h2 id="cooling-title">
     Esfriando agora <span>{{ stalled().length }}</span>
+    @if (stalledAmount() > 0) {
+      <small class="at-risk"
+        >{{ stalledAmount() | currency: 'BRL' : 'symbol' : '1.0-0' }} em risco</small
+      >
+    }
   </h2>
   @if (stalled().length === 0) {
     <p class="cooling-empty">Nenhuma negociação parada há {{ stallDays }} dias ou mais.</p>
@@ -195,6 +200,7 @@
         <label for="n-title">Título</label>
         <input
           id="n-title"
+          placeholder="Ex.: Reforma da sala comercial"
           type="text"
           maxlength="200"
           formControlName="title"
@@ -206,7 +212,14 @@
       </div>
       <div class="field">
         <label for="n-amount">Valor (R$), opcional</label>
-        <input id="n-amount" type="number" min="0" step="0.01" formControlName="amount" />
+        <input
+          id="n-amount"
+          placeholder="Ex.: 25000"
+          type="number"
+          min="0"
+          step="0.01"
+          formControlName="amount"
+        />
         @if (newForm.controls.amount.invalid) {
           <span class="field-error">O valor não pode ser negativo.</span>
         }

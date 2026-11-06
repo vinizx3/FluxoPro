@@ -8,15 +8,13 @@
 
   <div class="field">
     <label for="a-current">Senha atual</label>
-    <input
-      id="a-current"
-      type="password"
-      maxlength="72"
-      autocomplete="current-password"
+    <app-password-field
+      fieldId="a-current"
+      autocompleteHint="current-password"
+      placeholder="Sua senha atual"
+      [maxLength]="72"
       formControlName="currentPassword"
-      [class.invalid]="
-        form.controls.currentPassword.touched && form.controls.currentPassword.invalid
-      "
+      [invalid]="form.controls.currentPassword.touched && form.controls.currentPassword.invalid"
     />
     @if (form.controls.currentPassword.touched && form.controls.currentPassword.invalid) {
       <span class="field-error">Informe a senha atual.</span>
@@ -25,13 +23,13 @@
 
   <div class="field">
     <label for="a-new">Nova senha</label>
-    <input
-      id="a-new"
-      type="password"
-      maxlength="72"
-      autocomplete="new-password"
+    <app-password-field
+      fieldId="a-new"
+      autocompleteHint="new-password"
+      placeholder="Mínimo de 8 caracteres"
+      [maxLength]="72"
       formControlName="newPassword"
-      [class.invalid]="form.controls.newPassword.touched && form.controls.newPassword.invalid"
+      [invalid]="form.controls.newPassword.touched && form.controls.newPassword.invalid"
     />
     @if (form.controls.newPassword.touched && form.controls.newPassword.invalid) {
       <span class="field-error"
@@ -42,13 +40,13 @@
 
   <div class="field">
     <label for="a-confirm">Repita a nova senha</label>
-    <input
-      id="a-confirm"
-      type="password"
-      maxlength="72"
-      autocomplete="new-password"
+    <app-password-field
+      fieldId="a-confirm"
+      autocompleteHint="new-password"
+      placeholder="Repita a nova senha"
+      [maxLength]="72"
       formControlName="confirmPassword"
-      [class.invalid]="
+      [invalid]="
         form.controls.confirmPassword.touched &&
         (form.controls.confirmPassword.invalid || form.hasError('mismatch'))
       "
