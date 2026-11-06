@@ -1,0 +1,27 @@
+package com.vftech.fluxopro.dashboard.controller;
+
+import com.vftech.fluxopro.common.security.CurrentUser;
+import com.vftech.fluxopro.dashboard.dto.DashboardResponse;
+import com.vftech.fluxopro.dashboard.service.DashboardService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/dashboard")
+public class DashboardController {
+
+    private final DashboardService service;
+    private final CurrentUser currentUser;
+
+    public DashboardController(DashboardService service, CurrentUser currentUser) {
+        this.service = service;
+        this.currentUser = currentUser;
+    }
+
+    @GetMapping
+    public DashboardResponse get(@RequestParam(defaultValue = "90") int days) {
+        return service.build(currentUser.get(), days);
+    }
+}

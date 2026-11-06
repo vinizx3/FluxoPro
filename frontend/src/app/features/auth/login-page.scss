@@ -12,8 +12,17 @@
   border-radius: var(--radius-lg);
   padding: 32px 28px;
 }
-.logo { margin: 0; font-size: 2rem; span { color: var(--hot); } }
-.tag { color: var(--text-muted); margin: 8px 0 24px; }
+.logo {
+  margin: 0;
+  font-size: 2rem;
+  span {
+    color: var(--hot);
+  }
+}
+.tag {
+  color: var(--text-muted);
+  margin: 8px 0 24px;
+}
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -31,10 +40,17 @@
     font-weight: 600;
     color: var(--text-muted);
     cursor: pointer;
-    &.on { background: var(--surface); color: var(--graphite); }
+    &.on {
+      background: var(--surface);
+      color: var(--graphite);
+    }
   }
 }
-form { display: flex; flex-direction: column; gap: 16px; }
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 .form-error {
   margin: 0;
   padding: 10px 12px;

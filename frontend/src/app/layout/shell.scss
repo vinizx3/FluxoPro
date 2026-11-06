@@ -13,7 +13,9 @@
   font-size: 1.25rem;
   color: #fff;
   text-decoration: none;
-  span { color: var(--hot-vivid); }
+  span {
+    color: var(--hot-vivid);
+  }
 }
 nav {
   display: flex;
@@ -27,10 +29,17 @@ nav {
     min-height: var(--touch);
     display: inline-flex;
     align-items: center;
-    &.active { color: #fff; background: var(--graphite-elevated); }
+    &.active {
+      color: #fff;
+      background: var(--graphite-elevated);
+    }
   }
 }
-.who { display: flex; align-items: center; gap: 12px; }
+.who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .role {
   color: var(--cold-muted);
   font-size: 0.875rem;
@@ -40,16 +49,39 @@ nav {
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-sm);
-  &:hover, &.active { color: #fff; }
+  &:hover,
+  &.active {
+    color: #fff;
+  }
 }
-.who .btn-secondary { background: transparent; color: #fff; border-color: var(--graphite-elevated); }
-nav a .badge { margin-left: 8px; background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; font-weight: 600; }
-main { padding: 24px; }
+.who .btn-secondary {
+  background: transparent;
+  color: #fff;
+  border-color: var(--graphite-elevated);
+}
+nav a .badge {
+  margin-left: 8px;
+  background: var(--hot-action);
+  color: #fff;
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+main {
+  padding: 24px;
+}
 
 /* Celular e tablet estreito: marca e usuário na primeira linha, menu rolável na segunda */
 @media (max-width: 900px) {
-  .top { flex-wrap: wrap; gap: 0 12px; padding: 8px 16px 0; }
-  .who { margin-left: auto; }
+  .top {
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding: 8px 16px 0;
+  }
+  .who {
+    margin-left: auto;
+  }
   nav {
     order: 3;
     flex: 1 0 100%;
@@ -57,9 +89,13 @@ main { padding: 24px; }
     white-space: nowrap;
     padding-bottom: 8px;
     scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
-  main { padding: 16px; }
+  main {
+    padding: 16px;
+  }
 }
 
 .skip {
@@ -72,6 +108,10 @@ main { padding: 24px; }
   background: #fff;
   color: var(--graphite);
   font-weight: 600;
-  &:focus { top: 8px; }
+  &:focus {
+    top: 8px;
+  }
 }
-main:focus { outline: none; }
+main:focus {
+  outline: none;
+}

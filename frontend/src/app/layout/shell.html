@@ -6,6 +6,7 @@
     <a routerLink="/clientes" routerLinkActive="active" ariaCurrentWhenActive="page">Clientes</a>
     <a routerLink="/projetos" routerLinkActive="active" ariaCurrentWhenActive="page">Projetos</a>
     @if (auth.isOwner()) {
+      <a routerLink="/painel" routerLinkActive="active" ariaCurrentWhenActive="page">Painel</a>
       <a routerLink="/equipe" routerLinkActive="active" ariaCurrentWhenActive="page">Equipe</a>
       <a routerLink="/historico" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Histórico</a

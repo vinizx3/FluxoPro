@@ -47,6 +47,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/account/account-page').then((m) => m.AccountPage),
       },
       {
+        path: 'painel',
+        title: 'Painel · FluxoPro',
+        canActivate: [ownerGuard],
+        loadComponent: () =>
+          import('./features/dashboard/dashboard-page').then((m) => m.DashboardPage),
+      },
+      {
         path: 'equipe',
         title: 'Equipe · FluxoPro',
         canActivate: [ownerGuard],
