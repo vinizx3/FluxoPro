@@ -1,0 +1,283 @@
+/*
+  FluxoPro: design tokens (do conceito de interface) e estilos globais.
+  Ideia central: temperatura. Quente (laranja) = negociação andando. Frio (azul) = parada.
+  O azul NÃO é a cor da marca: ele significa "atenção, esfriou".
+*/
+:root {
+  /* Base */
+  --bg: #edeff2;
+  --surface: #ffffff;
+  --graphite: #12161c;
+  --graphite-elevated: #232a35;
+  --text: #12161c;
+  --text-muted: #55606e;
+  --border: #dde1e7;
+  --border-field: #c5ccd6;
+
+  /* Quente: negociação ativa e ações */
+  --hot: #d9480f; /* acento gráfico (marcas, números, foco) */
+  --hot-action: #c43f0c; /* botão com texto branco: contraste 4,93:1 */
+  --hot-vivid: #e8742a;
+
+  /* Frio: negociação parada */
+  --cold: #1f4f8f;
+  --cold-bg: #f1f6fc;
+  --cold-border: #bfd0e6;
+  --cold-badge: #e3ecf8;
+  --cold-muted: #b9c9de;
+  --cold-on-dark: #9dc0f0;
+
+  /* Estados */
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --success: #1b7a43;
+
+  /* Tipografia */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Instrument Sans', system-ui, sans-serif;
+
+  /* Forma */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --touch: 44px; /* alvo mínimo de toque */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--hot);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch);
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: 600 15px/1 var(--font-body);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--hot-action);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(0.93);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  border-color: var(--border-field);
+  color: var(--text);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Campos de formulário */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field textarea {
+  min-height: 96px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 400 16px var(--font-body);
+  resize: vertical;
+}
+
+.field input {
+  min-height: var(--touch);
+  padding: 0 14px;
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 400 16px var(--font-body);
+}
+
+.field select {
+  min-height: var(--touch);
+  padding: 0 12px;
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 400 16px var(--font-body);
+}
+
+.field input.invalid {
+  border-color: var(--danger);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* Termômetro: marcas finas de dias sem movimento */
+.ticks {
+  display: flex;
+  gap: 4px;
+}
+
+.ticks i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cold-muted);
+}
+
+.ticks i.on {
+  background: var(--hot-vivid);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
+/* Blocos compartilhados entre as telas */
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; h1 { margin: 0; } }
+.head-actions { display: flex; gap: 8px; }
+.msg { margin: 0 0 16px; padding: 10px 12px; border-radius: var(--radius-sm);
+  &.error { background: var(--danger-bg); color: var(--danger); }
+  &.ok { background: #e8f3ec; color: var(--success); } }
+.overlay { position: fixed; inset: 0; background: rgb(18 22 28 / 55%); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.dialog { width: 100%; max-width: 440px; max-height: 90vh; overflow: auto; background: var(--surface); border-radius: var(--radius-lg); padding: 24px; display: grid; gap: 14px;
+  h2, p { margin: 0; } p { color: var(--text-muted); } }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+select.control { min-height: var(--touch); border: 1px solid var(--border-field); border-radius: var(--radius-sm); background: var(--surface); font: inherit; padding: 0 8px; }
+
+.muted { color: var(--text-muted); }
+.empty { padding: 20px; border: 1px dashed var(--border-field); border-radius: var(--radius); color: var(--text-muted); }
+.pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; span { color: var(--text-muted); font-size: .875rem; } }
+
+.pill { padding: 2px 12px; border-radius: 99px; font-size: .8125rem; font-weight: 600; white-space: nowrap;
+  &.won, &.delivered { background: #e8f3ec; color: var(--success); }
+  &.lost { background: var(--danger-bg); color: var(--danger); }
+  &.planning { background: var(--cold-badge); color: var(--cold); }
+  &.progress { background: #fdeee6; color: var(--hot-action); }
+  &.cancelled { background: var(--bg); color: var(--text-muted); } }
+
+dd a, .field-error a { color: var(--hot-action); font-weight: 600; }
+
+.pill.dark { background: var(--graphite); color: #fff; }
+
+/* Botões de filtro (abas) das listas: numa linha só, rolando de lado quando não cabe */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+  button {
+    flex: none;
+    min-height: var(--touch);
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    &.on { background: var(--graphite); color: #fff; }
+  }
+}
+.badge { background: var(--hot-action); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .75rem; }
+
+/* Dicas de preenchimento: visíveis, mas claramente diferentes de um texto digitado */
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+.btn-whatsapp {
+  background: #1f7a4d;
+  border: 1px solid #1f7a4d;
+  color: #fff;
+  text-decoration: none;
+  &:hover { background: #18633e; }
+}
+
+a.wa { color: #1f7a4d; font-weight: 600; text-decoration: none; }
+a.wa:hover { text-decoration: underline; }

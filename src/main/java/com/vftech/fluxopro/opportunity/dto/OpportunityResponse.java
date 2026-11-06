@@ -5,12 +5,14 @@ import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record OpportunityResponse(
         UUID id,
         UUID customerId,
         String customerName,
+        String customerPhone,
         UUID ownerId,
         String ownerName,
         String title,
@@ -18,6 +20,9 @@ public record OpportunityResponse(
         OpportunityStatus status,
         String lostReason,
         Instant statusChangedAt,
+        Instant lastActivityAt,
+        LocalDate nextStepAt,
+        String nextStepNote,
         Instant archivedAt,
         Long version) {
 
@@ -26,6 +31,7 @@ public record OpportunityResponse(
                 o.getId(),
                 o.getCustomer().getId(),
                 o.getCustomer().getName(),
+                o.getCustomer().getPhone(),
                 o.getOwner().getId(),
                 o.getOwner().getName(),
                 o.getTitle(),
@@ -33,6 +39,9 @@ public record OpportunityResponse(
                 o.getStatus(),
                 o.getLostReason(),
                 o.getStatusChangedAt(),
+                o.getLastActivityAt(),
+                o.getNextStepAt(),
+                o.getNextStepNote(),
                 o.getArchivedAt(),
                 o.getVersion());
     }

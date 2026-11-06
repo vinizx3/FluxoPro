@@ -41,11 +41,10 @@ public class StalledAlertService {
         Instant limit = now.minus(Duration.ofDays(stalledAfterDays));
 
         int created = 0;
-        for (Opportunity opportunity : opportunities
-                .findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        for (Opportunity opportunity : opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                         companyId, OPEN_STATUSES, limit)) {
             boolean alreadyAlerted = notifications.existsByOpportunityIdAndTypeAndStalledSince(
-                    opportunity.getId(), NotificationType.STALLED_OPPORTUNITY, opportunity.getStatusChangedAt());
+                    opportunity.getId(), NotificationType.STALLED_OPPORTUNITY, opportunity.getLastActivityAt());
             if (alreadyAlerted) {
                 continue;
             }
@@ -54,7 +53,7 @@ public class StalledAlertService {
                     opportunity.getOwner(),
                     NotificationType.STALLED_OPPORTUNITY,
                     opportunity,
-                    opportunity.getStatusChangedAt(),
+                    opportunity.getLastActivityAt(),
                     now));
             created++;
         }

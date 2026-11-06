@@ -97,7 +97,7 @@ class OpportunityServiceTest {
 
     @Test
     void ownerBoardShowsAllOpenOpportunitiesOfTheCompany() {
-        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 eq(companyId), anyCollection()))
                 .thenReturn(List.of(opportunityOwnedBy(sellerId)));
 
@@ -108,20 +108,20 @@ class OpportunityServiceTest {
                 OpportunityStatus.PROPOSAL, OpportunityStatus.NEGOTIATION);
         assertThat(board.get(OpportunityStatus.LEAD)).hasSize(1);
         assertThat(board.get(OpportunityStatus.PROPOSAL)).isEmpty();
-        verify(opportunities, never()).findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+        verify(opportunities, never()).findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 any(), any(), anyCollection());
     }
 
     @Test
     void sellerBoardIsRestrictedToTheirOwnOpportunities() {
-        when(opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+        when(opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 eq(companyId), eq(sellerId), anyCollection()))
                 .thenReturn(List.of(opportunityOwnedBy(sellerId)));
 
         Map<OpportunityStatus, List<OpportunityResponse>> board = service.board(seller());
 
         assertThat(board.get(OpportunityStatus.LEAD)).hasSize(1);
-        verify(opportunities, never()).findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+        verify(opportunities, never()).findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 any(), anyCollection());
     }
 

@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -47,6 +48,14 @@ public class Opportunity {
     @Column(nullable = false)
     private Instant statusChangedAt;
 
+    @Column(nullable = false)
+    private Instant lastActivityAt;
+
+    private LocalDate nextStepAt;
+
+    @Column(length = 255)
+    private String nextStepNote;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -65,6 +74,7 @@ public class Opportunity {
         this.amount = amount;
         this.status = OpportunityStatus.LEAD;
         this.statusChangedAt = now;
+        this.lastActivityAt = now;
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -82,6 +92,29 @@ public class Opportunity {
         }
         this.status = target;
         this.statusChangedAt = now;
+        this.lastActivityAt = now;
+        if (!target.isOpen()) {
+            this.nextStepAt = null;
+            this.nextStepNote = null;
+        }
+    }
+
+    public void registerContact(LocalDate nextStepAt, String nextStepNote, Instant now) {
+        ensureNotArchived();
+        if (!status.isOpen()) {
+            throw new BusinessRuleException("Contacts can only be registered on open opportunities");
+        }
+        this.lastActivityAt = now;
+        this.nextStepAt = nextStepAt;
+        this.nextStepNote = nextStepNote;
+    }
+
+    public void reassign(User newOwner) {
+        ensureNotArchived();
+        if (!status.isOpen()) {
+            throw new BusinessRuleException("Only open opportunities can be reassigned");
+        }
+        this.owner = newOwner;
     }
 
     @PreUpdate
@@ -101,6 +134,9 @@ public class Opportunity {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public Long getVersion() { return version; }
+    public Instant getLastActivityAt() { return lastActivityAt; }
+    public LocalDate getNextStepAt() { return nextStepAt; }
+    public String getNextStepNote() { return nextStepNote; }
 
     @Version
     private Long version;

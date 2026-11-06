@@ -1,0 +1,117 @@
+.top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  min-height: 60px;
+  background: var(--graphite);
+  color: #fff;
+}
+.brand {
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #fff;
+  text-decoration: none;
+  span {
+    color: var(--hot-vivid);
+  }
+}
+nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  a {
+    color: var(--cold-muted);
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    min-height: var(--touch);
+    display: inline-flex;
+    align-items: center;
+    &.active {
+      color: #fff;
+      background: var(--graphite-elevated);
+    }
+  }
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.role {
+  color: var(--cold-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  padding: 10px 8px;
+  min-height: var(--touch);
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  &:hover,
+  &.active {
+    color: #fff;
+  }
+}
+.who .btn-secondary {
+  background: transparent;
+  color: #fff;
+  border-color: var(--graphite-elevated);
+}
+nav a .badge {
+  margin-left: 8px;
+  background: var(--hot-action);
+  color: #fff;
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+main {
+  padding: 24px;
+}
+
+/* Celular e tablet estreito: marca e usuário na primeira linha, menu rolável na segunda */
+@media (max-width: 900px) {
+  .top {
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding: 8px 16px 0;
+  }
+  .who {
+    margin-left: auto;
+  }
+  nav {
+    order: 3;
+    flex: 1 0 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  main {
+    padding: 16px;
+  }
+}
+
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 20;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--graphite);
+  font-weight: 600;
+  &:focus {
+    top: 8px;
+  }
+}
+main:focus {
+  outline: none;
+}

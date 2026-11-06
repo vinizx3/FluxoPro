@@ -1,0 +1,158 @@
+<div class="page-head">
+  <h1>Painel</h1>
+</div>
+<p class="muted lead">
+  Como está a empresa: o que está em andamento, o que fechou e onde se perde.
+</p>
+
+<div class="filter-tabs" role="group" aria-label="Período">
+  @for (p of periods; track p.days) {
+    <button
+      type="button"
+      [class.on]="days() === p.days"
+      [attr.aria-pressed]="days() === p.days"
+      (click)="setDays(p.days)"
+    >
+      {{ p.label }}
+    </button>
+  }
+</div>
+
+@if (error(); as message) {
+  <p class="alert-error" role="alert">
+    {{ message }} <button type="button" class="linkbtn" (click)="load()">Tentar de novo</button>
+  </p>
+} @else if (loading() && !data()) {
+  <p class="muted" role="status">Carregando o painel…</p>
+} @else if (data(); as d) {
+  @if (empty()) {
+    <div class="empty">
+      <p><strong>Ainda não há números para mostrar.</strong></p>
+      <p class="muted">
+        Cadastre negociações no <a routerLink="/funil">funil</a> e o painel se monta sozinho.
+      </p>
+    </div>
+  } @else {
+    <section class="kpis" aria-label="Resumo" [attr.aria-busy]="loading()">
+      <article class="kpi">
+        <h2>Em aberto</h2>
+        <p class="big">{{ d.openAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}</p>
+        <p class="muted">{{ d.openCount }} negociaç{{ d.openCount === 1 ? 'ão' : 'ões' }}</p>
+      </article>
+      <article class="kpi" [class.risk]="d.stalledCount > 0">
+        <h2>Esfriando</h2>
+        <p class="big">{{ d.stalledAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}</p>
+        <p class="muted">
+          {{ d.stalledCount }} sem atividade há 7 dias ou mais
+          @if (d.stalledCount > 0) {
+            · <a routerLink="/funil">ver no funil</a>
+          }
+        </p>
+      </article>
+      <article class="kpi good">
+        <h2>Ganhas</h2>
+        <p class="big">{{ d.wonAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}</p>
+        <p class="muted">{{ d.wonCount }} nos últimos {{ periodLabel(d.periodDays) }}</p>
+      </article>
+      <article class="kpi">
+        <h2>Taxa de conversão</h2>
+        <p class="big">
+          @if (d.conversionRate !== null) {
+            {{ d.conversionRate | percent: '1.0-0' }}
+          } @else {
+            —
+          }
+        </p>
+        <p class="muted">{{ note(d.wonCount, d.lostCount) }}</p>
+      </article>
+      <article class="kpi">
+        <h2>Tempo até ganhar</h2>
+        <p class="big">
+          @if (d.averageDaysToWin !== null) {
+            {{ daysText(d.averageDaysToWin) }}
+          } @else {
+            —
+          }
+        </p>
+        <p class="muted">Da criação ao fechamento, em média</p>
+      </article>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="h-stages">
+        <h2 id="h-stages">Negociações abertas por etapa</h2>
+        <ul class="bars">
+          @for (s of d.stages; track s.status) {
+            <li>
+              <span class="label">{{ statusLabel[s.status] }}</span>
+              <span class="track" aria-hidden="true"
+                ><span class="fill" [style.width.%]="width(s.count, maxStage())"></span
+              ></span>
+              <span class="num"
+                >{{ s.count }} · {{ s.amount | currency: 'BRL' : 'symbol' : '1.0-0' }}</span
+              >
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="card" aria-labelledby="h-lost">
+        <h2 id="h-lost">Por que perdemos</h2>
+        @if (d.lostReasons.length === 0) {
+          <p class="muted">Nenhuma negociação perdida no período.</p>
+        } @else {
+          <ul class="bars lost">
+            @for (r of d.lostReasons; track r.reason) {
+              <li>
+                <span class="label">{{ r.reason }}</span>
+                <span class="track" aria-hidden="true"
+                  ><span class="fill" [style.width.%]="width(r.count, maxReason())"></span
+                ></span>
+                <span class="num">{{ r.count }}</span>
+              </li>
+            }
+          </ul>
+          <p class="muted foot">
+            {{ d.lostCount }} perdida{{ d.lostCount === 1 ? '' : 's' }} ·
+            {{ d.lostAmount | currency: 'BRL' : 'symbol' : '1.0-0' }} deixados na mesa
+          </p>
+        }
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="h-sellers">
+      <h2 id="h-sellers">Por vendedor</h2>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Desempenho de cada vendedor
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Vendedor</th>
+              <th scope="col" class="n">Em aberto</th>
+              <th scope="col" class="n">Esfriando</th>
+              <th scope="col" class="n">Ganhas</th>
+              <th scope="col" class="n">Perdidas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of d.sellers; track s.userId) {
+              <tr>
+                <th scope="row">{{ s.name }}</th>
+                <td class="n">
+                  {{ s.openCount }} · {{ s.openAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}
+                </td>
+                <td class="n" [class.risk]="s.stalledCount > 0">{{ s.stalledCount }}</td>
+                <td class="n">
+                  {{ s.wonCount }} · {{ s.wonAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}
+                </td>
+                <td class="n">{{ s.lostCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+}

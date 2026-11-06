@@ -1,0 +1,118 @@
+<div class="page-head">
+  <h1>Histórico</h1>
+</div>
+<p class="muted lead">Quem fez o quê, e quando, em clientes, negociações e projetos.</p>
+
+<div class="filter-tabs" role="group" aria-label="Filtrar por tipo">
+  <button
+    type="button"
+    [class.on]="type() === null"
+    [attr.aria-pressed]="type() === null"
+    (click)="setType(null)"
+  >
+    Tudo
+  </button>
+  <button
+    type="button"
+    [class.on]="type() === 'CUSTOMER'"
+    [attr.aria-pressed]="type() === 'CUSTOMER'"
+    (click)="setType('CUSTOMER')"
+  >
+    Clientes
+  </button>
+  <button
+    type="button"
+    [class.on]="type() === 'OPPORTUNITY'"
+    [attr.aria-pressed]="type() === 'OPPORTUNITY'"
+    (click)="setType('OPPORTUNITY')"
+  >
+    Negociações
+  </button>
+  <button
+    type="button"
+    [class.on]="type() === 'PROJECT'"
+    [attr.aria-pressed]="type() === 'PROJECT'"
+    (click)="setType('PROJECT')"
+  >
+    Projetos
+  </button>
+</div>
+
+@if (entityId()) {
+  <p class="chip">
+    Mostrando só o histórico de um item.
+    <button type="button" class="linkbtn" (click)="clearEntity()">Ver tudo</button>
+  </p>
+}
+
+@if (error()) {
+  <p class="msg error" role="alert">{{ error() }}</p>
+}
+
+@if (loading()) {
+  <p class="muted">Carregando histórico…</p>
+} @else if (result(); as page) {
+  @if (page.content.length === 0) {
+    <p class="empty">Nenhum registro ainda.</p>
+  } @else {
+    <ol class="timeline">
+      @for (e of page.content; track e.id) {
+        <li>
+          <div class="line">
+            <p class="what">
+              <strong>{{ e.actorName || 'Usuário' }}</strong>
+              {{ actionLabel[e.action].toLowerCase() }} {{ article[e.entityType] }}
+              {{ entityLabel[e.entityType] }}
+              @if (link(e); as to) {
+                · <a [routerLink]="to">abrir</a>
+              }
+            </p>
+            <time [attr.datetime]="e.occurredAt">{{
+              e.occurredAt | date: 'dd/MM/yyyy HH:mm'
+            }}</time>
+          </div>
+          @if (e.changes.length > 0) {
+            <ul class="changes">
+              @for (c of e.changes; track c.field) {
+                <li>
+                  <span class="fname">{{ field(c.field) }}:</span>
+                  @if (e.action === 'CREATED') {
+                    {{ value(c.field, c.newValue) }}
+                  } @else {
+                    <s>{{ value(c.field, c.oldValue) }}</s> →
+                    <b>{{ value(c.field, c.newValue) }}</b>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      }
+    </ol>
+
+    @if (page.totalPages > 1) {
+      <nav class="pager" aria-label="Paginação">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="page.page === 0"
+          (click)="goTo(page.page - 1)"
+        >
+          Anterior
+        </button>
+        <span
+          >Página {{ page.page + 1 }} de {{ page.totalPages }} ·
+          {{ page.totalElements }} registros</span
+        >
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="page.page + 1 >= page.totalPages"
+          (click)="goTo(page.page + 1)"
+        >
+          Próxima
+        </button>
+      </nav>
+    }
+  }
+}

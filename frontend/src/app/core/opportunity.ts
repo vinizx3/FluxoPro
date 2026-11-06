@@ -1,0 +1,198 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { API_BASE } from './api';
+
+export type OpportunityStatus =
+  'LEAD' | 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+
+/** Etapas abertas, na ordem das colunas do funil. */
+export const OPEN_STATUSES: OpportunityStatus[] = [
+  'LEAD',
+  'QUALIFICATION',
+  'PROPOSAL',
+  'NEGOTIATION',
+];
+
+export const STATUS_LABEL: Record<OpportunityStatus, string> = {
+  LEAD: 'Lead',
+  QUALIFICATION: 'Qualificação',
+  PROPOSAL: 'Proposta',
+  NEGOTIATION: 'Negociação',
+  WON: 'Ganha',
+  LOST: 'Perdida',
+};
+
+/** Espelha as transições permitidas do backend (OpportunityStatus.canMoveTo). O backend continua sendo quem decide. */
+const ALLOWED: Record<OpportunityStatus, OpportunityStatus[]> = {
+  LEAD: ['QUALIFICATION', 'LOST'],
+  QUALIFICATION: ['LEAD', 'PROPOSAL', 'LOST'],
+  PROPOSAL: ['QUALIFICATION', 'NEGOTIATION', 'LOST'],
+  NEGOTIATION: ['PROPOSAL', 'WON', 'LOST'],
+  WON: [],
+  LOST: [],
+};
+
+export function allowedTargets(status: OpportunityStatus): OpportunityStatus[] {
+  return ALLOWED[status];
+}
+
+export interface Opportunity {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  ownerId: string;
+  ownerName: string;
+  title: string;
+  amount: number | null;
+  status: OpportunityStatus;
+  lostReason: string | null;
+  statusChangedAt: string;
+  /** Última atividade: o que for mais recente entre a mudança de etapa e o último contato. */
+  lastActivityAt?: string;
+  nextStepAt?: string | null;
+  nextStepNote?: string | null;
+  archivedAt: string | null;
+  version: number;
+}
+
+export interface StalledOpportunity {
+  id: string;
+  title: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  amount: number | null;
+  status: OpportunityStatus;
+  statusChangedAt: string;
+  lastActivityAt?: string;
+  daysStalled: number;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface MoveStatusRequest {
+  status: OpportunityStatus;
+  lostReason: string | null;
+  version: number;
+}
+
+export interface OpportunityRequest {
+  customerId: string;
+  title: string;
+  amount: number | null;
+}
+
+export interface OpportunityUpdateRequest {
+  title: string;
+  amount: number | null;
+  version: number;
+}
+
+export type ContactKind = 'CALL' | 'WHATSAPP' | 'EMAIL' | 'MEETING' | 'OTHER';
+
+export const CONTACT_KINDS: ContactKind[] = ['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'OTHER'];
+
+export const CONTACT_LABEL: Record<ContactKind, string> = {
+  CALL: 'Ligação',
+  WHATSAPP: 'WhatsApp',
+  EMAIL: 'E-mail',
+  MEETING: 'Reunião',
+  OTHER: 'Outro',
+};
+
+export interface Contact {
+  id: string;
+  kind: ContactKind;
+  note: string;
+  authorId: string;
+  authorName: string;
+  contactedAt: string;
+}
+
+export interface ContactRequest {
+  kind: ContactKind;
+  note: string;
+  /** yyyy-MM-dd; vazio quando não há próximo passo marcado. */
+  nextStepAt: string | null;
+  nextStepNote: string | null;
+}
+
+/** Data usada pelo termômetro: a última atividade, ou a mudança de etapa se o backend ainda não enviou. */
+export function activityDate(o: {
+  lastActivityAt?: string | null;
+  statusChangedAt: string;
+}): string {
+  return o.lastActivityAt ?? o.statusChangedAt;
+}
+
+/** Próximo passo vencido: a data marcada já passou (datas no formato yyyy-MM-dd). */
+export function nextStepOverdue(nextStepAt: string | null | undefined, today: string): boolean {
+  return !!nextStepAt && nextStepAt < today;
+}
+
+export interface ReassignRequest {
+  ownerId: string;
+  version: number;
+}
+
+export type Board = Partial<Record<OpportunityStatus, Opportunity[]>>;
+
+@Injectable({ providedIn: 'root' })
+export class OpportunityApi {
+  private readonly http = inject(HttpClient);
+
+  board() {
+    return this.http.get<Board>(`${API_BASE}/opportunities/board`);
+  }
+
+  stalled(days: number, size = 50) {
+    return this.http.get<PageResponse<StalledOpportunity>>(`${API_BASE}/opportunities/stalled`, {
+      params: { days, size },
+    });
+  }
+
+  move(id: string, body: MoveStatusRequest) {
+    return this.http.patch<Opportunity>(`${API_BASE}/opportunities/${id}/status`, body);
+  }
+
+  closed(page: number, size = 20) {
+    return this.http.get<PageResponse<Opportunity>>(`${API_BASE}/opportunities/closed`, {
+      params: { page, size },
+    });
+  }
+
+  get(id: string) {
+    return this.http.get<Opportunity>(`${API_BASE}/opportunities/${id}`);
+  }
+
+  create(body: OpportunityRequest) {
+    return this.http.post<Opportunity>(`${API_BASE}/opportunities`, body);
+  }
+
+  update(id: string, body: OpportunityUpdateRequest) {
+    return this.http.put<Opportunity>(`${API_BASE}/opportunities/${id}`, body);
+  }
+
+  reassign(id: string, body: ReassignRequest) {
+    return this.http.patch<Opportunity>(`${API_BASE}/opportunities/${id}/owner`, body);
+  }
+
+  contacts(id: string) {
+    return this.http.get<Contact[]>(`${API_BASE}/opportunities/${id}/contacts`);
+  }
+
+  registerContact(id: string, body: ContactRequest) {
+    return this.http.post<Opportunity>(`${API_BASE}/opportunities/${id}/contacts`, body);
+  }
+
+  archive(id: string) {
+    return this.http.post<void>(`${API_BASE}/opportunities/${id}/archive`, {});
+  }
+}

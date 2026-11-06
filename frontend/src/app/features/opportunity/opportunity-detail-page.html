@@ -1,0 +1,301 @@
+<p class="back"><a routerLink="/funil">← Voltar ao funil</a></p>
+
+@if (loading()) {
+  <p class="muted">Carregando…</p>
+} @else if (opportunity(); as o) {
+  <div class="page-head">
+    <h1>{{ o.title }}</h1>
+    <span class="status">{{ label[o.status] }}</span>
+  </div>
+
+  @if (error()) {
+    <p class="msg error" role="alert">{{ error() }}</p>
+  }
+  @if (notice()) {
+    <p class="msg ok" role="status">{{ notice() }}</p>
+  }
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Resumo</h2>
+      <dl>
+        <dt>Cliente</dt>
+        <dd>
+          {{ o.customerName }}
+          @if (wa(o); as link) {
+            <a
+              class="wa"
+              [href]="link"
+              target="_blank"
+              rel="noopener noreferrer"
+              [attr.aria-label]="'Chamar ' + o.customerName + ' no WhatsApp (abre em nova aba)'"
+              >· WhatsApp</a
+            >
+          }
+        </dd>
+        <dt>Responsável</dt>
+        <dd>
+          {{ o.ownerName }}
+          @if (canTransfer(o)) {
+            <button type="button" class="linklike" (click)="openTransfer()">· Transferir</button>
+          }
+        </dd>
+        <dt>Valor</dt>
+        <dd>
+          @if (o.amount !== null) {
+            {{ o.amount | currency: 'BRL' }}
+          } @else {
+            Sem valor
+          }
+        </dd>
+        @if (o.nextStepAt) {
+          <dt>Próximo passo</dt>
+          <dd [class.late]="overdue(o)">
+            {{ o.nextStepAt | date: 'dd/MM/yyyy' }}
+            @if (overdue(o)) {
+              <span class="late-tag">vencido</span>
+            }
+            @if (o.nextStepNote) {
+              <span class="step-note">{{ o.nextStepNote }}</span>
+            }
+          </dd>
+        }
+        @if (o.status === 'LOST' && o.lostReason) {
+          <dt>Motivo da perda</dt>
+          <dd>{{ o.lostReason }}</dd>
+        }
+      </dl>
+      <h3>Tempo sem movimento</h3>
+      <app-thermometer [since]="activity(o)" />
+      @if (auth.isOwner()) {
+        <a class="hist" routerLink="/historico" [queryParams]="{ tipo: 'OPPORTUNITY', id: o.id }"
+          >Ver histórico desta negociação</a
+        >
+      }
+    </section>
+
+    <form class="panel" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h2>Editar</h2>
+      <div class="field">
+        <label for="d-title">Título</label>
+        <input
+          id="d-title"
+          type="text"
+          maxlength="200"
+          formControlName="title"
+          [class.invalid]="form.controls.title.touched && form.controls.title.invalid"
+        />
+        @if (form.controls.title.touched && form.controls.title.invalid) {
+          <span class="field-error">Informe o título.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="d-amount">Valor (R$)</label>
+        <input id="d-amount" type="number" min="0" step="0.01" formControlName="amount" />
+        @if (form.controls.amount.invalid) {
+          <span class="field-error">O valor não pode ser negativo.</span>
+        }
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Salvando…' : 'Salvar alterações' }}
+        </button>
+        @if (o.status === 'WON' || o.status === 'LOST') {
+          <button type="button" class="btn btn-secondary" (click)="askArchive()">
+            Arquivar negociação
+          </button>
+        }
+      </div>
+      @if (o.status !== 'WON' && o.status !== 'LOST') {
+        <p class="hint">
+          Para arquivar, primeiro marque a negociação como ganha ou perdida no funil.
+        </p>
+      }
+    </form>
+
+    <section class="panel wide" aria-labelledby="contacts-title">
+      <div class="panel-head">
+        <h2 id="contacts-title">Contatos</h2>
+        @if (isOpen(o)) {
+          <button type="button" class="btn btn-primary" (click)="openContact()">
+            Registrar contato
+          </button>
+        }
+      </div>
+      @if (contactsError()) {
+        <p class="msg error" role="alert">{{ contactsError() }}</p>
+      } @else if (contactsLoading()) {
+        <p class="muted">Carregando contatos…</p>
+      } @else {
+        <ol class="timeline">
+          @for (c of contacts(); track c.id) {
+            <li>
+              <div class="t-head">
+                <span class="kind">{{ contactLabel[c.kind] }}</span>
+                <strong>{{ c.authorName }}</strong>
+                <time [attr.datetime]="c.contactedAt">{{
+                  c.contactedAt | date: 'dd/MM/yyyy HH:mm'
+                }}</time>
+              </div>
+              <p>{{ c.note }}</p>
+            </li>
+          } @empty {
+            <li class="empty-line">
+              Nenhum contato registrado ainda. Cada contato reinicia o termômetro e guarda o que foi
+              combinado.
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  </div>
+} @else {
+  @if (error()) {
+    <p class="msg error" role="alert">{{ error() }}</p>
+  }
+}
+
+@if (transferOpen()) {
+  <div class="overlay">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tr-title"
+      appDialog
+      (dialogClose)="closeTransfer()"
+      [formGroup]="transferForm"
+      (ngSubmit)="confirmTransfer()"
+      novalidate
+    >
+      <h2 id="tr-title">Transferir negociação</h2>
+      @if (transferLoading()) {
+        <p class="muted">Carregando a equipe…</p>
+      } @else if (opportunity(); as current) {
+        @if (targets(current).length === 0) {
+          <p>
+            Não há outra pessoa ativa para receber esta negociação. Adicione um vendedor na tela
+            <a routerLink="/equipe">Equipe</a>.
+          </p>
+        } @else {
+          <p>
+            Hoje ela é de <strong>{{ current.ownerName }}</strong
+            >. O histórico de contatos vai junto, e quem a tinha deixa de vê-la.
+          </p>
+          <div class="field">
+            <label for="tr-owner">Nova pessoa responsável</label>
+            <select id="tr-owner" formControlName="ownerId">
+              <option value="">Escolha…</option>
+              @for (m of targets(current); track m.id) {
+                <option [value]="m.id">
+                  {{ m.name }} ({{ m.role === 'OWNER' ? 'Dono' : 'Vendedor' }})
+                </option>
+              }
+            </select>
+            @if (transferForm.controls.ownerId.touched && transferForm.controls.ownerId.invalid) {
+              <span class="field-error">Escolha quem vai receber a negociação.</span>
+            }
+          </div>
+        }
+      }
+      @if (transferError()) {
+        <p class="msg error" role="alert">{{ transferError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeTransfer()">Cancelar</button>
+        @if (!transferLoading() && opportunity(); as current) {
+          @if (targets(current).length > 0) {
+            <button type="submit" class="btn btn-primary" [disabled]="transferSaving()">
+              {{ transferSaving() ? 'Transferindo…' : 'Transferir' }}
+            </button>
+          }
+        }
+      </div>
+    </form>
+  </div>
+}
+
+@if (contactOpen()) {
+  <div class="overlay">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ct-title"
+      appDialog
+      (dialogClose)="closeContact()"
+      [formGroup]="contactForm"
+      (ngSubmit)="saveContact()"
+      novalidate
+    >
+      <h2 id="ct-title">Registrar contato</h2>
+      <div class="field">
+        <label for="ct-kind">Como foi o contato?</label>
+        <select id="ct-kind" formControlName="kind">
+          @for (k of contactKinds; track k) {
+            <option [value]="k">{{ contactLabel[k] }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="ct-note">O que foi combinado?</label>
+        <textarea
+          id="ct-note"
+          maxlength="1000"
+          rows="3"
+          placeholder="Ex.: Liguei, pediu a proposta revisada até sexta."
+          formControlName="note"
+          [class.invalid]="contactForm.controls.note.touched && contactForm.controls.note.invalid"
+        ></textarea>
+        @if (contactForm.controls.note.touched && contactForm.controls.note.invalid) {
+          <span class="field-error">Escreva uma anotação curta sobre o contato.</span>
+        }
+      </div>
+      <div class="field">
+        <label for="ct-date">Próximo passo (opcional)</label>
+        <input id="ct-date" type="date" [min]="today" formControlName="nextStepAt" />
+      </div>
+      @if (contactForm.controls.nextStepAt.value) {
+        <div class="field">
+          <label for="ct-step">O que fazer nesse dia?</label>
+          <input
+            id="ct-step"
+            type="text"
+            maxlength="255"
+            placeholder="Ex.: Enviar a proposta revisada"
+            formControlName="nextStepNote"
+          />
+        </div>
+      }
+      @if (contactFormError()) {
+        <p class="msg error" role="alert">{{ contactFormError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeContact()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="contactSaving()">
+          {{ contactSaving() ? 'Registrando…' : 'Registrar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmingArchive()) {
+  <div class="overlay">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="arch-title"
+      appDialog
+      (dialogClose)="cancelArchive()"
+    >
+      <h2 id="arch-title">Arquivar negociação</h2>
+      <p>Ela deixa de aparecer no funil. Você quer arquivar?</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelArchive()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="archive()">Arquivar</button>
+      </div>
+    </div>
+  </div>
+}

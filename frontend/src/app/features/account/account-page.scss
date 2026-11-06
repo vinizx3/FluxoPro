@@ -1,0 +1,21 @@
+.lead {
+  margin: -8px 0 16px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  h2 {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

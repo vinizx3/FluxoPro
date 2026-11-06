@@ -1,6 +1,9 @@
 package com.vftech.fluxopro.opportunity.Controller;
 
 import com.vftech.fluxopro.common.dto.PageResponse;
+import com.vftech.fluxopro.contact.dto.ContactResponse;
+import com.vftech.fluxopro.contact.dto.RegisterContactRequest;
+import com.vftech.fluxopro.contact.service.OpportunityContactService;
 import com.vftech.fluxopro.opportunity.dto.*;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
@@ -18,10 +21,14 @@ import java.util.UUID;
 public class OpportunityController {
 
     private final OpportunityService service;
+    private final OpportunityContactService contactService;
     private final CurrentUser currentUser;
 
-    public OpportunityController(OpportunityService service, CurrentUser currentUser) {
+    public OpportunityController(OpportunityService service,
+                                 OpportunityContactService contactService,
+                                 CurrentUser currentUser) {
         this.service = service;
+        this.contactService = contactService;
         this.currentUser = currentUser;
     }
 
@@ -60,8 +67,33 @@ public class OpportunityController {
         service.archive(currentUser.get(), id);
     }
 
+    @GetMapping("/closed")
+    public PageResponse<OpportunityResponse> closed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.closed(currentUser.get(), page, size);
+    }
+
     @PatchMapping("/{id}/status")
     public OpportunityResponse move(@PathVariable UUID id, @Valid @RequestBody MoveStatusRequest request) {
         return service.move(currentUser.get(), id, request);
+    }
+
+    @PostMapping("/{id}/contacts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OpportunityResponse registerContact(@PathVariable UUID id,
+                                               @Valid @RequestBody RegisterContactRequest request) {
+        return contactService.register(currentUser.get(), id, request);
+    }
+
+    @GetMapping("/{id}/contacts")
+    public List<ContactResponse> contacts(@PathVariable UUID id) {
+        return contactService.list(currentUser.get(), id);
+    }
+
+    @PatchMapping("/{id}/owner")
+    public OpportunityResponse reassign(@PathVariable UUID id,
+                                        @Valid @RequestBody ReassignRequest request) {
+        return service.reassign(currentUser.get(), id, request);
     }
 }
