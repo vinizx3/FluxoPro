@@ -90,4 +90,10 @@ public class OpportunityController {
     public List<ContactResponse> contacts(@PathVariable UUID id) {
         return contactService.list(currentUser.get(), id);
     }
+
+    @PatchMapping("/{id}/owner")
+    public OpportunityResponse reassign(@PathVariable UUID id,
+                                        @Valid @RequestBody ReassignRequest request) {
+        return service.reassign(currentUser.get(), id, request);
+    }
 }

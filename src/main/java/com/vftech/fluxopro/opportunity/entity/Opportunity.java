@@ -109,6 +109,14 @@ public class Opportunity {
         this.nextStepNote = nextStepNote;
     }
 
+    public void reassign(User newOwner) {
+        ensureNotArchived();
+        if (!status.isOpen()) {
+            throw new BusinessRuleException("Only open opportunities can be reassigned");
+        }
+        this.owner = newOwner;
+    }
+
     @PreUpdate
     void onUpdate() {
         this.updatedAt = Instant.now();

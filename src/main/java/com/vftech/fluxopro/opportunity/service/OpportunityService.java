@@ -7,6 +7,7 @@ import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.concurrency.VersionCheck;
 import com.vftech.fluxopro.common.dto.PageResponse;
+import com.vftech.fluxopro.common.exception.BusinessRuleException;
 import com.vftech.fluxopro.company.entity.Company;
 import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.customer.entity.Customer;
@@ -139,6 +140,34 @@ public class OpportunityService {
                     user.id(),
                     opportunity.getTitle()));
         }
+        return OpportunityResponse.from(opportunity);
+    }
+
+    @Transactional
+    public OpportunityResponse reassign(AuthenticatedUser user, UUID id, ReassignRequest request) {
+        if (!user.isOwner()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the owner can reassign opportunities");
+        }
+        Opportunity opportunity = findVisible(user, id);
+        VersionCheck.ensure(opportunity.getVersion(), request.version());
+
+        User newOwner = users.findByIdAndCompanyId(request.ownerId(), user.companyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!newOwner.isActive()) {
+            throw new BusinessRuleException("The new owner must be an active user");
+        }
+
+        User previousOwner = opportunity.getOwner();
+        if (previousOwner.getId().equals(newOwner.getId())) {
+            return OpportunityResponse.from(opportunity);
+        }
+
+        opportunity.reassign(newOwner);
+        opportunities.saveAndFlush(opportunity);
+        audit.record(user, AuditEntityType.OPPORTUNITY, opportunity.getId(), AuditAction.UPDATED,
+                ChangeSet.create()
+                        .track("owner", previousOwner.getName(), newOwner.getName())
+                        .build());
         return OpportunityResponse.from(opportunity);
     }
 
