@@ -16,7 +16,7 @@ export interface AuditChange {
 export interface AuditEntry {
   id: string;
   actorId: string;
-  /** Ainda não vem do backend; quando vier, a tela passa a mostrar o nome em vez de "Usuário". */
+  /** Nome de quem fez a ação; se faltar, a tela mostra "Usuário". */
   actorName?: string | null;
   entityType: AuditEntityType;
   entityId: string;
@@ -49,6 +49,7 @@ const FIELD_LABEL: Record<string, string> = {
   email: 'E-mail',
   phone: 'Telefone',
   customerId: 'Cliente',
+  owner: 'Responsável',
   sourceOpportunityId: 'Negociação de origem',
 };
 

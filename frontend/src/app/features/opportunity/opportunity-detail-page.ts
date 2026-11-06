@@ -17,6 +17,7 @@ import {
   nextStepOverdue,
 } from '../../core/opportunity';
 import { blankToNull } from '../../core/forms';
+import { TeamApi, TeamMember, transferTargets } from '../../core/team';
 import { todayIso } from '../../core/project';
 import { Thermometer } from '../../shared/thermometer';
 import { followUpUrl } from '../../core/whatsapp';
@@ -30,6 +31,7 @@ import { followUpUrl } from '../../core/whatsapp';
 export class OpportunityDetailPage {
   protected readonly auth = inject(AuthService);
   private readonly api = inject(OpportunityApi);
+  private readonly teamApi = inject(TeamApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -52,6 +54,15 @@ export class OpportunityDetailPage {
   protected readonly contactSaving = signal(false);
   protected readonly contactFormError = signal<string | null>(null);
   protected readonly today = todayIso();
+
+  protected readonly transferOpen = signal(false);
+  protected readonly transferSaving = signal(false);
+  protected readonly transferLoading = signal(false);
+  protected readonly transferError = signal<string | null>(null);
+  protected readonly members = signal<TeamMember[]>([]);
+  protected readonly transferForm = this.fb.nonNullable.group({
+    ownerId: ['', Validators.required],
+  });
 
   protected readonly contactForm = this.fb.nonNullable.group({
     kind: ['CALL' as (typeof CONTACT_KINDS)[number], Validators.required],
@@ -114,6 +125,71 @@ export class OpportunityDetailPage {
 
   protected overdue(o: Opportunity): boolean {
     return nextStepOverdue(o.nextStepAt, this.today);
+  }
+
+  protected canTransfer(o: Opportunity): boolean {
+    return this.auth.isOwner() && this.isOpen(o);
+  }
+
+  protected targets(o: Opportunity): TeamMember[] {
+    return transferTargets(this.members(), o.ownerId);
+  }
+
+  protected openTransfer(): void {
+    this.transferForm.reset({ ownerId: '' });
+    this.transferError.set(null);
+    this.transferOpen.set(true);
+    this.transferLoading.set(true);
+    this.teamApi.list().subscribe({
+      next: (list) => {
+        this.members.set(list);
+        this.transferLoading.set(false);
+      },
+      error: (err: unknown) => {
+        this.transferLoading.set(false);
+        this.transferError.set(
+          errorMessage(err, { 403: 'Somente o dono da empresa pode transferir negociações.' }),
+        );
+      },
+    });
+  }
+
+  protected closeTransfer(): void {
+    this.transferOpen.set(false);
+  }
+
+  protected confirmTransfer(): void {
+    const o = this.opportunity();
+    if (!o) {
+      return;
+    }
+    if (this.transferForm.invalid) {
+      this.transferForm.markAllAsTouched();
+      return;
+    }
+    this.transferSaving.set(true);
+    this.transferError.set(null);
+    this.api
+      .reassign(o.id, { ownerId: this.transferForm.getRawValue().ownerId, version: o.version })
+      .subscribe({
+        next: (updated) => {
+          // Só atualiza o resumo: o formulário de edição ao lado mantém o que a pessoa digitou.
+          this.opportunity.set(updated);
+          this.transferSaving.set(false);
+          this.transferOpen.set(false);
+          this.notice.set(`Negociação transferida para ${updated.ownerName}.`);
+        },
+        error: (err: unknown) => {
+          this.transferSaving.set(false);
+          this.transferError.set(
+            errorMessage(err, {
+              403: 'Somente o dono da empresa pode transferir negociações.',
+              422: 'Não foi possível transferir: a negociação está encerrada ou a pessoa está desativada.',
+              409: 'Esta negociação foi alterada por outra pessoa. Feche e tente de novo.',
+            }),
+          );
+        },
+      });
   }
 
   protected openContact(): void {

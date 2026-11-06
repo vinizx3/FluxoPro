@@ -137,6 +137,11 @@ export function nextStepOverdue(nextStepAt: string | null | undefined, today: st
   return !!nextStepAt && nextStepAt < today;
 }
 
+export interface ReassignRequest {
+  ownerId: string;
+  version: number;
+}
+
 export type Board = Partial<Record<OpportunityStatus, Opportunity[]>>;
 
 @Injectable({ providedIn: 'root' })
@@ -173,6 +178,10 @@ export class OpportunityApi {
 
   update(id: string, body: OpportunityUpdateRequest) {
     return this.http.put<Opportunity>(`${API_BASE}/opportunities/${id}`, body);
+  }
+
+  reassign(id: string, body: ReassignRequest) {
+    return this.http.patch<Opportunity>(`${API_BASE}/opportunities/${id}/owner`, body);
   }
 
   contacts(id: string) {

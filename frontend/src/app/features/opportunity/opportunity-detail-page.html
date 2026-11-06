@@ -34,7 +34,12 @@
           }
         </dd>
         <dt>Responsável</dt>
-        <dd>{{ o.ownerName }}</dd>
+        <dd>
+          {{ o.ownerName }}
+          @if (canTransfer(o)) {
+            <button type="button" class="linklike" (click)="openTransfer()">· Transferir</button>
+          }
+        </dd>
         <dt>Valor</dt>
         <dd>
           @if (o.amount !== null) {
@@ -148,6 +153,66 @@
   @if (error()) {
     <p class="msg error" role="alert">{{ error() }}</p>
   }
+}
+
+@if (transferOpen()) {
+  <div class="overlay">
+    <form
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tr-title"
+      appDialog
+      (dialogClose)="closeTransfer()"
+      [formGroup]="transferForm"
+      (ngSubmit)="confirmTransfer()"
+      novalidate
+    >
+      <h2 id="tr-title">Transferir negociação</h2>
+      @if (transferLoading()) {
+        <p class="muted">Carregando a equipe…</p>
+      } @else if (opportunity(); as current) {
+        @if (targets(current).length === 0) {
+          <p>
+            Não há outra pessoa ativa para receber esta negociação. Adicione um vendedor na tela
+            <a routerLink="/equipe">Equipe</a>.
+          </p>
+        } @else {
+          <p>
+            Hoje ela é de <strong>{{ current.ownerName }}</strong
+            >. O histórico de contatos vai junto, e quem a tinha deixa de vê-la.
+          </p>
+          <div class="field">
+            <label for="tr-owner">Nova pessoa responsável</label>
+            <select id="tr-owner" formControlName="ownerId">
+              <option value="">Escolha…</option>
+              @for (m of targets(current); track m.id) {
+                <option [value]="m.id">
+                  {{ m.name }} ({{ m.role === 'OWNER' ? 'Dono' : 'Vendedor' }})
+                </option>
+              }
+            </select>
+            @if (transferForm.controls.ownerId.touched && transferForm.controls.ownerId.invalid) {
+              <span class="field-error">Escolha quem vai receber a negociação.</span>
+            }
+          </div>
+        }
+      }
+      @if (transferError()) {
+        <p class="msg error" role="alert">{{ transferError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeTransfer()">Cancelar</button>
+        @if (!transferLoading() && opportunity(); as current) {
+          @if (targets(current).length > 0) {
+            <button type="submit" class="btn btn-primary" [disabled]="transferSaving()">
+              {{ transferSaving() ? 'Transferindo…' : 'Transferir' }}
+            </button>
+          }
+        }
+      </div>
+    </form>
+  </div>
 }
 
 @if (contactOpen()) {

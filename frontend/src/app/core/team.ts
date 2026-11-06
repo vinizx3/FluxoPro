@@ -37,3 +37,8 @@ export class TeamApi {
     );
   }
 }
+
+/** Quem pode receber uma negociação: usuários ativos, menos o responsável atual. */
+export function transferTargets(members: TeamMember[], currentOwnerId: string): TeamMember[] {
+  return members.filter((m) => m.active && m.id !== currentOwnerId);
+}
