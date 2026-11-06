@@ -152,6 +152,16 @@ p {
   font: 400 16px var(--font-body);
 }
 
+.field select {
+  min-height: var(--touch);
+  padding: 0 12px;
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 400 16px var(--font-body);
+}
+
 .field input.invalid {
   border-color: var(--danger);
 }

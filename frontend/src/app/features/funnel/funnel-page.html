@@ -78,7 +78,16 @@
                 Sem valor
               }
             </p>
-            <app-thermometer [since]="o.statusChangedAt" />
+            <app-thermometer [since]="activity(o)" />
+            @if (o.nextStepAt) {
+              <p class="next" [class.late]="overdue(o)">
+                {{ overdue(o) ? 'Próximo passo vencido' : 'Próximo passo' }}:
+                {{ o.nextStepAt | date: 'dd/MM' }}
+                @if (o.nextStepNote) {
+                  · {{ o.nextStepNote }}
+                }
+              </p>
+            }
             <p class="owner">
               {{ o.ownerName }}
               @if (wa(o); as link) {

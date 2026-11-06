@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { DialogDirective } from '../../shared/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,11 +13,14 @@ import {
   OpportunityStatus,
   STATUS_LABEL,
   StalledOpportunity,
+  activityDate,
   allowedTargets,
+  nextStepOverdue,
 } from '../../core/opportunity';
 import { STALL_DAYS, daysSince, isCold, sumAmounts } from '../../core/stall';
 import { Thermometer } from '../../shared/thermometer';
 import { followUpUrl } from '../../core/whatsapp';
+import { todayIso } from '../../core/project';
 
 interface PendingLoss {
   opportunity: Opportunity;
@@ -28,6 +31,7 @@ interface PendingLoss {
   selector: 'app-funnel-page',
   imports: [
     CurrencyPipe,
+    DatePipe,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -130,7 +134,15 @@ export class FunnelPage {
   }
 
   protected cold(o: Opportunity): boolean {
-    return isCold(daysSince(o.statusChangedAt, this.now()));
+    return isCold(daysSince(activityDate(o), this.now()));
+  }
+
+  protected activity(o: Opportunity): string {
+    return activityDate(o);
+  }
+
+  protected overdue(o: Opportunity): boolean {
+    return nextStepOverdue(o.nextStepAt, todayIso());
   }
 
   protected targets(o: Opportunity): OpportunityStatus[] {

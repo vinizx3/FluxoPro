@@ -48,6 +48,10 @@ export interface Opportunity {
   status: OpportunityStatus;
   lostReason: string | null;
   statusChangedAt: string;
+  /** Última atividade: o que for mais recente entre a mudança de etapa e o último contato. */
+  lastActivityAt?: string;
+  nextStepAt?: string | null;
+  nextStepNote?: string | null;
   archivedAt: string | null;
   version: number;
 }
@@ -61,6 +65,7 @@ export interface StalledOpportunity {
   amount: number | null;
   status: OpportunityStatus;
   statusChangedAt: string;
+  lastActivityAt?: string;
   daysStalled: number;
 }
 
@@ -88,6 +93,48 @@ export interface OpportunityUpdateRequest {
   title: string;
   amount: number | null;
   version: number;
+}
+
+export type ContactKind = 'CALL' | 'WHATSAPP' | 'EMAIL' | 'MEETING' | 'OTHER';
+
+export const CONTACT_KINDS: ContactKind[] = ['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'OTHER'];
+
+export const CONTACT_LABEL: Record<ContactKind, string> = {
+  CALL: 'Ligação',
+  WHATSAPP: 'WhatsApp',
+  EMAIL: 'E-mail',
+  MEETING: 'Reunião',
+  OTHER: 'Outro',
+};
+
+export interface Contact {
+  id: string;
+  kind: ContactKind;
+  note: string;
+  authorId: string;
+  authorName: string;
+  contactedAt: string;
+}
+
+export interface ContactRequest {
+  kind: ContactKind;
+  note: string;
+  /** yyyy-MM-dd; vazio quando não há próximo passo marcado. */
+  nextStepAt: string | null;
+  nextStepNote: string | null;
+}
+
+/** Data usada pelo termômetro: a última atividade, ou a mudança de etapa se o backend ainda não enviou. */
+export function activityDate(o: {
+  lastActivityAt?: string | null;
+  statusChangedAt: string;
+}): string {
+  return o.lastActivityAt ?? o.statusChangedAt;
+}
+
+/** Próximo passo vencido: a data marcada já passou (datas no formato yyyy-MM-dd). */
+export function nextStepOverdue(nextStepAt: string | null | undefined, today: string): boolean {
+  return !!nextStepAt && nextStepAt < today;
 }
 
 export type Board = Partial<Record<OpportunityStatus, Opportunity[]>>;
@@ -126,6 +173,14 @@ export class OpportunityApi {
 
   update(id: string, body: OpportunityUpdateRequest) {
     return this.http.put<Opportunity>(`${API_BASE}/opportunities/${id}`, body);
+  }
+
+  contacts(id: string) {
+    return this.http.get<Contact[]>(`${API_BASE}/opportunities/${id}/contacts`);
+  }
+
+  registerContact(id: string, body: ContactRequest) {
+    return this.http.post<Opportunity>(`${API_BASE}/opportunities/${id}/contacts`, body);
   }
 
   archive(id: string) {

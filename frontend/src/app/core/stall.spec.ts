@@ -1,5 +1,11 @@
 import { activeTicks, daysSince, isCold, sumAmounts } from './stall';
-import { allowedTargets } from './opportunity';
+import {
+  CONTACT_KINDS,
+  CONTACT_LABEL,
+  activityDate,
+  allowedTargets,
+  nextStepOverdue,
+} from './opportunity';
 
 describe('stall helpers', () => {
   const now = Date.parse('2026-10-27T12:00:00Z');
@@ -41,5 +47,30 @@ describe('sumAmounts', () => {
 
   it('is zero for an empty list', () => {
     expect(sumAmounts([])).toBe(0);
+  });
+});
+
+describe('contact helpers', () => {
+  it('uses the last activity when present and falls back to the status change', () => {
+    expect(
+      activityDate({
+        lastActivityAt: '2026-11-05T10:00:00Z',
+        statusChangedAt: '2026-10-01T10:00:00Z',
+      }),
+    ).toBe('2026-11-05T10:00:00Z');
+    expect(activityDate({ statusChangedAt: '2026-10-01T10:00:00Z' })).toBe('2026-10-01T10:00:00Z');
+  });
+
+  it('marks a next step as overdue only when its date has passed', () => {
+    expect(nextStepOverdue('2026-11-05', '2026-11-06')).toBe(true);
+    expect(nextStepOverdue('2026-11-06', '2026-11-06')).toBe(false);
+    expect(nextStepOverdue(null, '2026-11-06')).toBe(false);
+    expect(nextStepOverdue(undefined, '2026-11-06')).toBe(false);
+  });
+
+  it('has a Portuguese label for every contact kind', () => {
+    for (const kind of CONTACT_KINDS) {
+      expect(CONTACT_LABEL[kind].length).toBeGreaterThan(0);
+    }
   });
 });

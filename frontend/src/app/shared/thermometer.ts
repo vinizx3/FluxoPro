@@ -5,7 +5,7 @@ import { TICKS, activeTicks, daysSince, isCold } from '../core/stall';
 @Component({
   selector: 'app-thermometer',
   template: `
-    <div class="thermo" role="img" [attr.aria-label]="days() + ' dias nesta etapa'">
+    <div class="thermo" role="img" [attr.aria-label]="days() + ' dias sem movimento'">
       <div class="ticks" [class.cold]="cold()">
         @for (i of indexes; track i) {
           <i [class.on]="i < active()"></i>
