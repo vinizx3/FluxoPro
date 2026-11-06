@@ -55,7 +55,7 @@ class StalledAlertServiceTest {
     }
 
     private void givenStalled(Opportunity... stalled) {
-        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(NOW.minus(Duration.ofDays(7)))))
                 .thenReturn(List.of(stalled));
     }
@@ -99,13 +99,13 @@ class StalledAlertServiceTest {
 
     @Test
     void usesTheThresholdItWasGiven() {
-        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(NOW.minus(Duration.ofDays(30)))))
                 .thenReturn(List.of());
 
         service.createAlerts(companyId, 30);
 
-        verify(opportunities).findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        verify(opportunities).findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(NOW.minus(Duration.ofDays(30))));
     }
 }

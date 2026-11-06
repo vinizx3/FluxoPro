@@ -83,7 +83,7 @@ class OpportunityServiceStalledTest {
     void ownerSeesStalledOpportunitiesOfTheWholeCompanyWithDaysStalled() {
         Instant limit = NOW.minus(Duration.ofDays(7));
         Opportunity old = opportunityStalledSince(NOW.minus(Duration.ofDays(10)));
-        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(limit), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(old)));
 
@@ -97,13 +97,13 @@ class OpportunityServiceStalledTest {
     @Test
     void sellerOnlySeesTheirOwnStalledOpportunities() {
         AuthenticatedUser seller = seller();
-        when(opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        when(opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), eq(seller.id()), anyCollection(), any(Instant.class), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
         service.stalled(seller, 7, 0, 20);
 
-        verify(opportunities).findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        verify(opportunities).findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), eq(seller.id()), anyCollection(), any(Instant.class), any(Pageable.class));
     }
 
@@ -111,13 +111,13 @@ class OpportunityServiceStalledTest {
     @CsvSource({"0,1", "-5,1", "9999,365", "30,30"})
     void daysAreClampedBetweenOneAndAYear(int requested, int expectedDays) {
         Instant limit = NOW.minus(Duration.ofDays(expectedDays));
-        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        when(opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(limit), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
         service.stalled(owner(), requested, 0, 20);
 
-        verify(opportunities).findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+        verify(opportunities).findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 eq(companyId), anyCollection(), eq(limit), any(Pageable.class));
     }
 }

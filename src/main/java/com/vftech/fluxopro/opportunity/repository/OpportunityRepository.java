@@ -22,23 +22,27 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, UUID> 
             UUID customerId, UUID companyId, Collection<OpportunityStatus> statuses);
 
     @EntityGraph(attributePaths = {"customer", "owner"})
-    List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+    List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
             UUID companyId, Collection<OpportunityStatus> statuses);
 
     @EntityGraph(attributePaths = {"customer", "owner"})
-    List<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+    List<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
             UUID companyId, UUID ownerId, Collection<OpportunityStatus> statuses);
 
     @EntityGraph(attributePaths = {"customer", "owner"})
-    Page<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+    Page<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
             UUID companyId, Collection<OpportunityStatus> statuses, Instant limit, Pageable pageable);
 
     @EntityGraph(attributePaths = {"customer", "owner"})
-    Page<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+    Page<Opportunity> findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
             UUID companyId, UUID ownerId, Collection<OpportunityStatus> statuses, Instant limit, Pageable pageable);
 
     @EntityGraph(attributePaths = "owner")
     List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+            UUID companyId, Collection<OpportunityStatus> statuses, Instant limit);
+
+    @EntityGraph(attributePaths = "owner")
+    List<Opportunity> findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
             UUID companyId, Collection<OpportunityStatus> statuses, Instant limit);
 
     @EntityGraph(attributePaths = {"customer", "owner"})

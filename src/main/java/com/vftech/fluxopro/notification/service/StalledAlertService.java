@@ -42,7 +42,7 @@ public class StalledAlertService {
 
         int created = 0;
         for (Opportunity opportunity : opportunities
-                .findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+                .findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                         companyId, OPEN_STATUSES, limit)) {
             boolean alreadyAlerted = notifications.existsByOpportunityIdAndTypeAndStalledSince(
                     opportunity.getId(), NotificationType.STALLED_OPPORTUNITY, opportunity.getStatusChangedAt());

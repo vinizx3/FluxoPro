@@ -80,9 +80,9 @@ public class OpportunityService {
     @Transactional(readOnly = true)
     public Map<OpportunityStatus, List<OpportunityResponse>> board(AuthenticatedUser user) {
         List<Opportunity> open = user.isOwner()
-                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 user.companyId(), OPEN_STATUSES)
-                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByStatusChangedAtAsc(
+                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInOrderByLastActivityAtAsc(
                 user.companyId(), user.id(), OPEN_STATUSES);
 
         Map<OpportunityStatus, List<OpportunityResponse>> board = new EnumMap<>(OpportunityStatus.class);
@@ -184,12 +184,12 @@ public class OpportunityService {
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
-                Sort.by("statusChangedAt").ascending().and(Sort.by("id").ascending()));
+                Sort.by("lastActivityAt").ascending().and(Sort.by("id").ascending()));
 
         Page<Opportunity> result = user.isOwner()
-                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+                ? opportunities.findByCompanyIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 user.companyId(), OPEN_STATUSES, limit, pageable)
-                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndStatusChangedAtBefore(
+                : opportunities.findByCompanyIdAndOwnerIdAndArchivedAtIsNullAndStatusInAndLastActivityAtBefore(
                 user.companyId(), user.id(), OPEN_STATUSES, limit, pageable);
 
         return PageResponse.of(result, o -> StalledOpportunityResponse.from(o, now));

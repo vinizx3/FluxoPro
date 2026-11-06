@@ -13,10 +13,11 @@ public record StalledOpportunityResponse(
         String title,
         UUID customerId,
         String customerName,
-        String CustomerPhone,
+        String customerPhone,
         BigDecimal amount,
         OpportunityStatus status,
         Instant statusChangedAt,
+        Instant lastActivityAt,
         long daysStalled) {
 
     public static StalledOpportunityResponse from(Opportunity opportunity, Instant now) {
@@ -29,6 +30,7 @@ public record StalledOpportunityResponse(
                 opportunity.getAmount(),
                 opportunity.getStatus(),
                 opportunity.getStatusChangedAt(),
-                Duration.between(opportunity.getStatusChangedAt(), now).toDays());
+                opportunity.getLastActivityAt(),
+                Duration.between(opportunity.getLastActivityAt(), now).toDays());
     }
 }
