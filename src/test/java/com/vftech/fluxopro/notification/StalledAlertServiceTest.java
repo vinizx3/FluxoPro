@@ -90,6 +90,23 @@ class StalledAlertServiceTest {
     }
 
     @Test
+    void alertsAgainWhenAContactRestartedTheClockAndTheDealWentColdAgain() {
+        Instant contactedAt = NOW.minus(Duration.ofDays(8));
+        Opportunity opportunity = stalledOpportunity(mock(User.class));
+        opportunity.registerContact(null, null, contactedAt);
+        givenStalled(opportunity);
+
+        int created = service.createAlerts(companyId, 7);
+
+        assertThat(created).isEqualTo(1);
+        verify(notifications).existsByOpportunityIdAndTypeAndStalledSince(
+                any(), eq(NotificationType.STALLED_OPPORTUNITY), eq(contactedAt));
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notifications).save(captor.capture());
+        assertThat(captor.getValue().getStalledSince()).isEqualTo(contactedAt);
+    }
+
+    @Test
     void nothingStalledMeansNoAlerts() {
         givenStalled();
 
