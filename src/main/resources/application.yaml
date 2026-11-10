@@ -4,7 +4,7 @@ spring:
   application:
     name: fluxopro
   datasource:
-    url: jdbc:postgresql://localhost:5434/${POSTGRES_DB}
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/${POSTGRES_DB}}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
@@ -16,7 +16,7 @@ spring:
     validate-migration-naming: true
 
 server:
-  port: 8082
+  port: ${PORT:8082}
 
 app:
   jwt:
