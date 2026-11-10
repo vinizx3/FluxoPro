@@ -1,8 +1,10 @@
 # FluxoPro
 
+[![CI](https://github.com/vinizx3/FluxoPro/actions/workflows/ci.yml/badge.svg)](https://github.com/vinizx3/FluxoPro/actions/workflows/ci.yml)
+
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 6 de 13 concluídas: backend e frontend funcionando (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 6 de 13 concluídas (backend e frontend funcionando), mais a parte de Docker e CI/CD da fase 7. A publicação na internet é a próxima etapa (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -73,10 +75,11 @@ PLANNING / IN_PROGRESS ----> CANCELLED
 | Persistência | PostgreSQL 16, Spring Data JPA (Hibernate), Flyway |
 | Frontend | Angular 22 (componentes standalone, signals, sem zone.js), SCSS, formulários reativos |
 | Testes | JUnit 5, Mockito, AssertJ (backend); Vitest (frontend) |
-| Ambiente | Docker Compose |
+| Contêineres | Docker (builds multi-stage), Docker Compose, Nginx |
+| CI/CD | GitHub Actions |
 | Build | Maven (wrapper incluído), Angular CLI |
 
-Planejadas: GitHub Actions, Kafka, Redis, Testcontainers, Actuator + Micrometer + Prometheus + Grafana.
+Planejadas: publicação com HTTPS, e-mail (SMTP), Kafka, Redis, Testcontainers, Micrometer + Prometheus + Grafana.
 
 ## Decisões de arquitetura
 
@@ -90,6 +93,9 @@ Planejadas: GitHub Actions, Kafka, Redis, Testcontainers, Actuator + Micrometer 
 - **Concorrência otimista.** Cada registro tem uma `version`; a API compara a versão que o cliente leu com a gravada, e o `@Version` do JPA cobre a janela entre a checagem e a gravação.
 - **Paginação controlada pela API.** Tamanho máximo de página, ordenação fixa com desempate por `id` e resposta num formato próprio.
 - **Sem segredos no repositório.** As credenciais do banco e o segredo do JWT vêm de variáveis de ambiente.
+- **Imagens Docker enxutas e seguras.** O backend usa build em duas etapas (Maven na primeira, só o JRE na segunda) e roda com usuário sem privilégios. O `Dockerfile` copia apenas `pom.xml` e `src`, então o `.env` nunca entra na imagem. O endereço do banco (`DB_URL`) e a porta (`PORT`) podem ser trocados por variável de ambiente, e o padrão continua funcionando no desenvolvimento local.
+- **Mesma origem para o navegador.** Em produção, o Nginx serve o Angular e encaminha `/api` para o backend, então o navegador fala com um único endereço e não precisa de CORS.
+- **CI que reproduz o ambiente real.** A cada push na `main` e a cada pull request, o GitHub Actions roda os testes do backend contra um PostgreSQL 16 de verdade (inclusive as migrations do Flyway), os testes e o build do frontend, e confirma que as duas imagens Docker constroem.
 - **Venda ganha e projeto na mesma transação.** Ao ganhar uma negociação, a aplicação publica um evento interno e o módulo de projetos o consome de forma síncrona. Se a criação do projeto falhar, a venda não é marcada como ganha. O evento carrega só IDs, então na fase 8 ele pode virar uma mensagem Kafka sem mudar a regra de negócio.
 - **Idempotência garantida pelo banco.** Um índice único parcial em `source_opportunity_id` impede dois projetos para a mesma venda.
 - **Auditoria somente de inserção, garantida pelo banco.** O histórico é gravado na mesma transação da alteração. Gatilhos (triggers) do PostgreSQL recusam `UPDATE` e `DELETE` nas tabelas de auditoria, então nem um bug na aplicação reescreve o passado.
@@ -146,7 +152,20 @@ npm install
 npm start
 ```
 
-A interface abre em `http://localhost:4200`. O servidor de desenvolvimento encaminha as chamadas de `/api` para `http://localhost:8082`. Crie a sua empresa pela API (veja abaixo) e entre com o e-mail e a senha cadastrados.
+A interface abre em `http://localhost:4200`. O servidor de desenvolvimento encaminha as chamadas de `/api` para `http://localhost:8082`. Na tela de entrada, use a aba **Criar empresa** para cadastrar a empresa e o seu dono, e depois entre com o e-mail e a senha cadastrados.
+
+### Tudo junto, com Docker
+
+Para subir banco, backend e frontend como em produção, sem instalar JDK nem Node:
+
+1. Crie o `.env` como no passo 2 do backend (precisa de `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `JWT_SECRET`).
+2. Rode:
+   ```bash
+   docker compose -f docker-compose.prod.yml up --build
+   ```
+3. Abra `http://localhost`. O banco começa vazio: crie a empresa pela aba **Criar empresa**.
+
+Nessa configuração, o banco não é publicado fora da rede do Docker, e o Nginx encaminha `/api` para o backend.
 
 ### Experimente a API
 
@@ -230,6 +249,18 @@ npm test
 
 O teste de contexto do backend precisa do banco rodando (`docker compose up -d`). Na fase 9, ele passa a usar Testcontainers: os testes sobem o próprio PostgreSQL e Kafka.
 
+### Integração contínua
+
+O arquivo `.github/workflows/ci.yml` roda a cada push na `main` e a cada pull request, com três jobs:
+
+| Job | O que faz |
+|---|---|
+| `backend` | Sobe um PostgreSQL 16 descartável e roda `mvn verify` (testes e migrations) |
+| `frontend` | Roda `npm ci`, os testes (Vitest) e o build de produção do Angular |
+| `docker` | Constrói as imagens do backend e do frontend (só roda se os dois anteriores passarem) |
+
+Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa execução, contra um banco descartável. Nenhum segredo real fica no repositório.
+
 ## Roadmap
 
 | Fase | Escopo | Status |
@@ -240,7 +271,8 @@ O teste de contexto do backend precisa do banco rodando (`docker compose up -d`)
 | 4 | Auditoria (quem alterou o quê e quando) | Concluída |
 | 5 | Alertas de negociação parada (job diário e notificações) | Concluída |
 | 6 | Frontend em Angular: funil, clientes, projetos, equipe, histórico, alertas, painel, contatos e transferência | Concluída |
-| 7 | Deploy, CI/CD com GitHub Actions, e-mail (resumo diário e "esqueci minha senha") | Planejada |
+| 7a | Docker (imagens, Compose de produção) e CI com GitHub Actions | Concluída |
+| 7b | Publicação com HTTPS, e-mail (resumo diário e "esqueci minha senha") e contas de demonstração | Próxima |
 | 8 | Kafka: o evento "negociação ganha" (hoje interno) vira mensagem, com Outbox | Planejada |
 | 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka) | Planejada |
 | 10 | Cache com Redis, com latência medida antes e depois | Planejada |
