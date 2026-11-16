@@ -43,7 +43,7 @@
         <h2>Esfriando</h2>
         <p class="big">{{ d.stalledAmount | currency: 'BRL' : 'symbol' : '1.0-0' }}</p>
         <p class="muted">
-          {{ d.stalledCount }} sem atividade há 7 dias ou mais
+          {{ d.stalledCount }} sem atividade há {{ stalledDays() }} {{ stalledDays() === 1 ? 'dia' : 'dias' }} ou mais
           @if (d.stalledCount > 0) {
             · <a routerLink="/funil">ver no funil</a>
           }

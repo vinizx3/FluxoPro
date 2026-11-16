@@ -16,10 +16,6 @@ export interface AppNotification {
   readAt: string | null;
 }
 
-/**
- * O backend devolve o contador dentro de um objeto de um campo só.
- * Em vez de depender do nome exato do campo, pegamos o primeiro valor numérico.
- */
 export function extractCount(response: unknown): number {
   if (typeof response === 'number') {
     return response;
@@ -58,7 +54,6 @@ export class NotificationApi {
   }
 }
 
-/** Contador de alertas não lidos, compartilhado entre o menu e a tela de alertas. */
 @Injectable({ providedIn: 'root' })
 export class NotificationState {
   private readonly api = inject(NotificationApi);
@@ -67,7 +62,7 @@ export class NotificationState {
   refresh(): void {
     this.api.unreadCount().subscribe({
       next: (count) => this.unread.set(count),
-      error: () => undefined, // o contador é um enfeite: se falhar, a tela continua funcionando
+      error: () => undefined,
     });
   }
 }

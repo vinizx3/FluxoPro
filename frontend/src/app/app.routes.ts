@@ -66,6 +66,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/audit/audit-page').then((m) => m.AuditPage),
       },
       {
+        path: 'configuracoes',
+        title: 'Configurações · FluxoPro',
+        canActivate: [ownerGuard],
+        loadComponent: () =>
+          import('./features/settings/settings-page').then((m) => m.SettingsPage),
+      },
+      {
         path: 'negociacoes/:id',
         title: 'Negociação · FluxoPro',
         loadComponent: () =>

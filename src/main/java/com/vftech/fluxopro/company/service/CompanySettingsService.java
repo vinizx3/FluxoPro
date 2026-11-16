@@ -1,5 +1,9 @@
 package com.vftech.fluxopro.company.service;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
+import com.vftech.fluxopro.audit.service.ChangeSet;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.company.dto.CompanySettingsResponse;
 import com.vftech.fluxopro.company.entity.Company;
@@ -13,9 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class CompanySettingsService {
 
     private final CompanyRepository companies;
+    private final AuditRecorder audit;
 
-    public CompanySettingsService(CompanyRepository companies) {
+    public CompanySettingsService(CompanyRepository companies, AuditRecorder audit) {
         this.companies = companies;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -32,7 +38,12 @@ public class CompanySettingsService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stalledAfterDays must be between 1 and 90");
         }
         Company company = load(user);
+        int before = company.getStalledAfterDays();
         company.changeStalledAfterDays(stalledAfterDays);
+        audit.record(user, AuditEntityType.COMPANY, company.getId(), AuditAction.UPDATED,
+                ChangeSet.create()
+                        .track("stalledAfterDays", before, company.getStalledAfterDays())
+                        .build());
         return new CompanySettingsResponse(company.getStalledAfterDays());
     }
 

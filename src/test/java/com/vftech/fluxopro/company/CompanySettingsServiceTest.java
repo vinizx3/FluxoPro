@@ -1,5 +1,9 @@
 package com.vftech.fluxopro.company;
 
+import com.vftech.fluxopro.audit.entity.AuditAction;
+import com.vftech.fluxopro.audit.entity.AuditEntityType;
+import com.vftech.fluxopro.audit.entity.FieldChange;
+import com.vftech.fluxopro.audit.service.AuditRecorder;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
 import com.vftech.fluxopro.company.dto.CompanySettingsResponse;
 import com.vftech.fluxopro.company.entity.Company;
@@ -15,21 +19,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CompanySettingsServiceTest {
 
     @Mock
-    CompanyRepository companyRepository;
+    CompanyRepository companies;
+    @Mock
+    AuditRecorder audit;
 
     private final UUID companyId = UUID.randomUUID();
+
+    private CompanySettingsService service() {
+        return new CompanySettingsService(companies, audit);
+    }
 
     private AuthenticatedUser owner() {
         return new AuthenticatedUser(UUID.randomUUID(), companyId, Role.OWNER);
@@ -41,36 +51,58 @@ class CompanySettingsServiceTest {
 
     @Test
     void anyoneInTheCompanyCanReadTheThreshold() {
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(new Company("Acme")));
+        when(companies.findById(companyId)).thenReturn(Optional.of(new Company("Acme")));
 
-        assertThat(new CompanySettingsService(companyRepository).get(seller()).stalledAfterDays()).isEqualTo(7);
+        assertThat(service().get(seller()).stalledAfterDays()).isEqualTo(7);
     }
 
     @Test
     void theOwnerCanChangeTheThreshold() {
         Company company = new Company("Acme");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
+        when(companies.findById(companyId)).thenReturn(Optional.of(company));
 
-        CompanySettingsResponse response = new CompanySettingsService(companyRepository).update(owner(), 14);
+        CompanySettingsResponse response = service().update(owner(), 14);
 
         assertThat(response.stalledAfterDays()).isEqualTo(14);
         assertThat(company.getStalledAfterDays()).isEqualTo(14);
     }
 
     @Test
+    void theChangeIsRecordedInTheAuditLog() {
+        when(companies.findById(companyId)).thenReturn(Optional.of(new Company("Acme")));
+        AuthenticatedUser owner = owner();
+
+        service().update(owner, 14);
+
+        verify(audit).record(eq(owner), eq(AuditEntityType.COMPANY), any(), eq(AuditAction.UPDATED),
+                eq(List.of(new FieldChange("stalledAfterDays", "7", "14"))));
+    }
+
+    @Test
+    void savingTheSameValueRecordsNoChanges() {
+        when(companies.findById(companyId)).thenReturn(Optional.of(new Company("Acme")));
+        AuthenticatedUser owner = owner();
+
+        service().update(owner, 7);
+
+        verify(audit).record(eq(owner), eq(AuditEntityType.COMPANY), any(), eq(AuditAction.UPDATED),
+                eq(List.of()));
+    }
+
+    @Test
     void aSellerCannotChangeTheThreshold() {
-        assertThatThrownBy(() -> new CompanySettingsService(companyRepository).update(seller(), 14))
+        assertThatThrownBy(() -> service().update(seller(), 14))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
-        verifyNoInteractions(companyRepository);
+        verifyNoInteractions(companies, audit);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 91})
     void valuesOutsideTheRangeAreRejected(int days) {
-        assertThatThrownBy(() -> new CompanySettingsService(companyRepository).update(owner(), days))
+        assertThatThrownBy(() -> service().update(owner(), days))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-        verifyNoInteractions(companyRepository);
+        verifyNoInteractions(companies, audit);
     }
 }

@@ -1,0 +1,8 @@
+// Se o layout ficar diferente da tela "Minha conta", copie o conteúdo de account-page.scss para cá.
+:host {
+  display: block;
+}
+
+.card {
+  max-width: 560px;
+}

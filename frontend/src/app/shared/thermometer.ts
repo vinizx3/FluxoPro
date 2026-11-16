@@ -1,7 +1,7 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { TICKS, activeTicks, daysSince, isCold } from '../core/stall';
+import { CompanySettingsState } from '../core/settings';
 
-/** Termômetro de 10 tracinhos: laranja enquanto a negociação anda, azul-gelo conforme ela esfria. */
 @Component({
   selector: 'app-thermometer',
   template: `
@@ -39,5 +39,6 @@ export class Thermometer {
   private readonly now = Date.now();
   protected readonly days = computed(() => daysSince(this.since(), this.now));
   protected readonly active = computed(() => activeTicks(this.days()));
-  protected readonly cold = computed(() => isCold(this.days()));
+  private readonly settings = inject(CompanySettingsState);
+  protected readonly cold = computed(() => isCold(this.days(), this.settings.stalledAfterDays()));
 }

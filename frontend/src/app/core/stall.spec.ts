@@ -30,6 +30,12 @@ describe('stall helpers', () => {
     expect(activeTicks(3)).toBe(7);
     expect(activeTicks(25)).toBe(0);
   });
+
+  it('uses the threshold it is given', () => {
+  expect(isCold(3, 3)).toBe(true);
+  expect(isCold(2, 3)).toBe(false);
+  expect(isCold(20, 30)).toBe(false);
+});
 });
 
 describe('allowedTargets', () => {

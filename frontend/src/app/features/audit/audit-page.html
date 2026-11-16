@@ -1,7 +1,7 @@
 <div class="page-head">
   <h1>Histórico</h1>
 </div>
-<p class="muted lead">Quem fez o quê, e quando, em clientes, negociações e projetos.</p>
+<p class="muted lead">Quem fez o quê, e quando, em clientes, negociações, projetos e configurações da empresa.</p>
 
 <div class="filter-tabs" role="group" aria-label="Filtrar por tipo">
   <button
@@ -12,30 +12,16 @@
   >
     Tudo
   </button>
-  <button
-    type="button"
-    [class.on]="type() === 'CUSTOMER'"
-    [attr.aria-pressed]="type() === 'CUSTOMER'"
-    (click)="setType('CUSTOMER')"
-  >
-    Clientes
-  </button>
-  <button
-    type="button"
-    [class.on]="type() === 'OPPORTUNITY'"
-    [attr.aria-pressed]="type() === 'OPPORTUNITY'"
-    (click)="setType('OPPORTUNITY')"
-  >
-    Negociações
-  </button>
-  <button
-    type="button"
-    [class.on]="type() === 'PROJECT'"
-    [attr.aria-pressed]="type() === 'PROJECT'"
-    (click)="setType('PROJECT')"
-  >
-    Projetos
-  </button>
+  @for (t of types; track t) {
+    <button
+      type="button"
+      [class.on]="type() === t"
+      [attr.aria-pressed]="type() === t"
+      (click)="setType(t)"
+    >
+      {{ tabLabel[t] }}
+    </button>
+  }
 </div>
 
 @if (entityId()) {
