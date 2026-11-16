@@ -24,4 +24,3 @@ app:
     expiration-minutes: 60
   alerts:
     cron: "0 0 8 * * *"
-    stalled-after-days: 7

@@ -1,6 +1,7 @@
 package com.vftech.fluxopro.dashboard.service;
 
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
+import com.vftech.fluxopro.company.repository.CompanyRepository;
 import com.vftech.fluxopro.dashboard.dto.DashboardResponse;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
@@ -19,10 +20,12 @@ import java.util.List;
 public class DashboardService {
 
     private final OpportunityRepository opportunities;
+    private final CompanyRepository companyRepository;
     private final Clock clock;
 
-    public DashboardService(OpportunityRepository opportunities, Clock clock) {
+    public DashboardService(OpportunityRepository opportunities, CompanyRepository companyRepository, Clock clock) {
         this.opportunities = opportunities;
+        this.companyRepository = companyRepository;
         this.clock = clock;
     }
 
@@ -34,12 +37,17 @@ public class DashboardService {
         int period = Math.min(365, Math.max(7, days));
         Instant now = clock.instant();
 
+        int stalledAfterDays = companyRepository.findById(user.companyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"))
+                .getStalledAfterDays();
+
+
         List<Opportunity> open = opportunities.findByCompanyIdAndStatusIn(
                 user.companyId(), OpportunityStatus.openStatuses());
         List<Opportunity> closed = opportunities.findByCompanyIdAndStatusInAndStatusChangedAtAfter(
                 user.companyId(), List.of(OpportunityStatus.WON, OpportunityStatus.LOST),
                 now.minus(period, ChronoUnit.DAYS));
 
-        return com.vftech.fluxopro.dashboard.service.DashboardCalculator.calculate(open, closed, now, period);
+        return com.vftech.fluxopro.dashboard.service.DashboardCalculator.calculate(open, closed, now, period, stalledAfterDays);
     }
 }

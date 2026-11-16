@@ -55,7 +55,7 @@ class DashboardCalculatorTest {
 
     @Test
     void emptyCompanyHasNoRatesAndNoAverages() {
-        DashboardResponse r = DashboardCalculator.calculate(List.of(), List.of(), NOW, 90);
+        DashboardResponse r = DashboardCalculator.calculate(List.of(), List.of(), NOW, 90, 7);
 
         assertThat(r.conversionRate()).isNull();
         assertThat(r.averageDaysToWin()).isNull();
@@ -69,7 +69,7 @@ class DashboardCalculatorTest {
         User ana = seller("Ana");
         List<Opportunity> open = List.of(open(ana, "1000", 1), open(ana, "2000", 8), open(ana, "4000", 30));
 
-        DashboardResponse r = DashboardCalculator.calculate(open, List.of(), NOW, 90);
+        DashboardResponse r = DashboardCalculator.calculate(open, List.of(), NOW, 90, 7);
 
         assertThat(r.openCount()).isEqualTo(3);
         assertThat(r.openAmount()).isEqualByComparingTo("7000");
@@ -82,7 +82,7 @@ class DashboardCalculatorTest {
         User ana = seller("Ana");
         List<Opportunity> closed = List.of(won(ana, "5000", 10), won(ana, "3000", 20), lost(ana, "Preço"));
 
-        DashboardResponse r = DashboardCalculator.calculate(List.of(), closed, NOW, 90);
+        DashboardResponse r = DashboardCalculator.calculate(List.of(), closed, NOW, 90, 7);
 
         assertThat(r.wonCount()).isEqualTo(2);
         assertThat(r.lostCount()).isEqualTo(1);
@@ -96,7 +96,7 @@ class DashboardCalculatorTest {
         User ana = seller("Ana");
         List<Opportunity> closed = List.of(lost(ana, "Preço"), lost(ana, " preço "), lost(ana, "Prazo"));
 
-        DashboardResponse r = DashboardCalculator.calculate(List.of(), closed, NOW, 90);
+        DashboardResponse r = DashboardCalculator.calculate(List.of(), closed, NOW, 90, 7);
 
         assertThat(r.lostReasons()).hasSize(2);
         assertThat(r.lostReasons().get(0).reason()).isEqualTo("Preço");
@@ -111,12 +111,34 @@ class DashboardCalculatorTest {
         List<Opportunity> open = List.of(open(ana, "1000", 20), open(bia, "500", 1));
         List<Opportunity> closed = List.of(won(bia, "9000", 5), lost(ana, "Preço"));
 
-        DashboardResponse r = DashboardCalculator.calculate(open, closed, NOW, 90);
+        DashboardResponse r = DashboardCalculator.calculate(open, closed, NOW, 90, 7);
 
         assertThat(r.sellers()).extracting(DashboardResponse.SellerStats::name).containsExactly("Bia", "Ana");
         DashboardResponse.SellerStats ana1 = r.sellers().get(1);
         assertThat(ana1.stalledCount()).isEqualTo(1);
         assertThat(ana1.lostCount()).isEqualTo(1);
         assertThat(r.sellers().get(0).wonAmount()).isEqualByComparingTo("9000");
+    }
+
+    @Test
+    void aShorterThresholdMakesMoreDealsStalled() {
+        User ana = seller("Ana");
+        List<Opportunity> open = List.of(open(ana, "1000", 1), open(ana, "2000", 4), open(ana, "4000", 8));
+
+        DashboardResponse r = DashboardCalculator.calculate(open, List.of(), NOW, 90, 3);
+
+        assertThat(r.stalledCount()).isEqualTo(2);
+        assertThat(r.stalledAmount()).isEqualByComparingTo("6000");
+    }
+
+    @Test
+    void aLongerThresholdMakesFewerDealsStalled() {
+        User ana = seller("Ana");
+        List<Opportunity> open = List.of(open(ana, "1000", 8), open(ana, "2000", 20), open(ana, "4000", 40));
+
+        DashboardResponse r = DashboardCalculator.calculate(open, List.of(), NOW, 90, 30);
+
+        assertThat(r.stalledCount()).isEqualTo(1);
+        assertThat(r.stalledAmount()).isEqualByComparingTo("4000");
     }
 }

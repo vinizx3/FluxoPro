@@ -14,15 +14,14 @@ import java.util.stream.Stream;
 
 public final class DashboardCalculator {
 
-    static final int STALLED_DAYS = 7;
     private static final String NO_REASON = "Sem motivo informado";
 
     private DashboardCalculator() {
     }
 
-    public static DashboardResponse calculate(List<Opportunity> open, List<Opportunity> closed,
-                                       Instant now, int periodDays) {
-        Instant stalledBefore = now.minus(STALLED_DAYS, ChronoUnit.DAYS);
+    public static DashboardResponse calculate(List<Opportunity> open, List<Opportunity> closed, Instant now, int periodDays, int stalledAfterDays) {
+
+        Instant stalledBefore = now.minus(stalledAfterDays, ChronoUnit.DAYS);
 
         List<Opportunity> stalled = open.stream()
                 .filter(o -> o.getLastActivityAt().isBefore(stalledBefore))
@@ -32,7 +31,6 @@ public final class DashboardCalculator {
 
         Double conversion = closed.isEmpty() ? null : (double) won.size() / closed.size();
         Double averageDaysToWin = won.isEmpty() ? null : won.stream()
-                // getCreatedAt(): troque aqui se o getter da sua entidade tiver outro nome.
                 .mapToDouble(o -> Duration.between(o.getCreatedAt(), o.getStatusChangedAt()).toSeconds() / 86_400.0)
                 .average()
                 .orElse(0);
@@ -58,7 +56,6 @@ public final class DashboardCalculator {
     }
 
     private static List<DashboardResponse.LostReasonStats> lostReasons(List<Opportunity> lost) {
-        // Agrupa ignorando maiúsculas e espaços ("Preço" e "preço " viram um motivo só).
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, String> display = new HashMap<>();
         for (Opportunity o : lost) {
