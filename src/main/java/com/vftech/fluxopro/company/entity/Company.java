@@ -18,12 +18,24 @@ public class Company {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "stalled_after_days", nullable = false)
+    private int stalledAfterDays = 7;
+
     protected Company() {
         // required by JPA
     }
 
     public Company(String name) {
         this.name = name;
+    }
+
+    public int getStalledAfterDays() { return stalledAfterDays; }
+
+    public void changeStalledAfterDays(int days) {
+        if (days < 1 || days > 90) {
+            throw new IllegalArgumentException("stalledAfterDays must be between 1 and 90");
+        }
+        this.stalledAfterDays = days;
     }
 
     @PrePersist

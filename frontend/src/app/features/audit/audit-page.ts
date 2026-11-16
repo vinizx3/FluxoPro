@@ -14,7 +14,7 @@ import {
 import { errorMessage } from '../../core/error-message';
 import { PageResponse } from '../../core/opportunity';
 
-const TYPES: AuditEntityType[] = ['CUSTOMER', 'OPPORTUNITY', 'PROJECT'];
+const TYPES: AuditEntityType[] = ['CUSTOMER', 'OPPORTUNITY', 'PROJECT', 'COMPANY'];
 
 @Component({
   selector: 'app-audit-page',
@@ -33,6 +33,13 @@ export class AuditPage {
     CUSTOMER: 'um',
     OPPORTUNITY: 'uma',
     PROJECT: 'um',
+    COMPANY: 'uma',
+  };
+  protected readonly tabLabel: Record<AuditEntityType, string> = {
+    CUSTOMER: 'Clientes',
+    OPPORTUNITY: 'Negociações',
+    PROJECT: 'Projetos',
+    COMPANY: 'Empresa',
   };
   protected readonly field = fieldLabel;
   protected readonly value = formatValue;

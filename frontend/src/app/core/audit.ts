@@ -4,8 +4,7 @@ import { API_BASE } from './api';
 import { PageResponse, STATUS_LABEL } from './opportunity';
 import { PROJECT_STATUS_LABEL } from './project';
 
-export type AuditEntityType = 'CUSTOMER' | 'OPPORTUNITY' | 'PROJECT';
-export type AuditAction = 'CREATED' | 'UPDATED' | 'STATUS_CHANGED' | 'ARCHIVED';
+export type AuditEntityType = 'CUSTOMER' | 'OPPORTUNITY' | 'PROJECT' | 'COMPANY';export type AuditAction = 'CREATED' | 'UPDATED' | 'STATUS_CHANGED' | 'ARCHIVED';
 
 export interface AuditChange {
   field: string;
@@ -16,7 +15,6 @@ export interface AuditChange {
 export interface AuditEntry {
   id: string;
   actorId: string;
-  /** Nome de quem fez a ação; se faltar, a tela mostra "Usuário". */
   actorName?: string | null;
   entityType: AuditEntityType;
   entityId: string;
@@ -29,6 +27,7 @@ export const ENTITY_LABEL: Record<AuditEntityType, string> = {
   CUSTOMER: 'cliente',
   OPPORTUNITY: 'negociação',
   PROJECT: 'projeto',
+  COMPANY: 'empresa',
 };
 
 export const ACTION_LABEL: Record<AuditAction, string> = {
@@ -51,6 +50,7 @@ const FIELD_LABEL: Record<string, string> = {
   customerId: 'Cliente',
   owner: 'Responsável',
   sourceOpportunityId: 'Negociação de origem',
+  stalledAfterDays: 'Dias para esfriar',
 };
 
 export function fieldLabel(field: string): string {
@@ -59,13 +59,15 @@ export function fieldLabel(field: string): string {
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-/** Deixa um valor do histórico legível: etapas em português, dinheiro em reais, datas em dd/MM/yyyy. */
 export function formatValue(field: string, value: string | null): string {
   if (value === null || value === '') {
     return '—';
   }
   if (field.endsWith('Id')) {
     return 'vinculado';
+  }
+  if (field === 'stalledAfterDays') {
+    return value === '1' ? '1 dia' : `${value} dias`;
   }
   if (field === 'status') {
     const labels: Record<string, string> = { ...STATUS_LABEL, ...PROJECT_STATUS_LABEL };

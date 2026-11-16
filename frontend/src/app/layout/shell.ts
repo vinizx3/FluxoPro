@@ -4,6 +4,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { NotificationState } from '../core/notification';
+import { CompanySettingsState } from '../core/settings';
+
 
 const REFRESH_MS = 60_000;
 
@@ -16,11 +18,11 @@ const REFRESH_MS = 60_000;
 export class Shell {
   protected readonly auth = inject(AuthService);
   protected readonly notifications = inject(NotificationState);
+  private readonly settings = inject(CompanySettingsState);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor() {
-    // No celular o menu rola de lado: mantém o item da tela atual visível.
     inject(Router)
       .events.pipe(
         filter((e) => e instanceof NavigationEnd),
@@ -34,6 +36,7 @@ export class Shell {
         ),
       );
 
+    this.settings.refresh();
     this.notifications.refresh();
     const timer = setInterval(() => this.notifications.refresh(), REFRESH_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));

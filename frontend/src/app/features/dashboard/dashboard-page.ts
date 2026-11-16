@@ -11,6 +11,7 @@ import {
 } from '../../core/dashboard';
 import { errorMessage } from '../../core/error-message';
 import { STATUS_LABEL } from '../../core/opportunity';
+import { CompanySettingsState } from '../../core/settings';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -27,6 +28,7 @@ export class DashboardPage {
   protected readonly data = signal<Dashboard | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly stalledDays = inject(CompanySettingsState).stalledAfterDays;
 
   protected readonly maxStage = computed(() =>
     Math.max(0, ...(this.data()?.stages.map((s) => s.count) ?? [])),

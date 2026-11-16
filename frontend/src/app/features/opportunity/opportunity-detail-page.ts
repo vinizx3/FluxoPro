@@ -173,7 +173,6 @@ export class OpportunityDetailPage {
       .reassign(o.id, { ownerId: this.transferForm.getRawValue().ownerId, version: o.version })
       .subscribe({
         next: (updated) => {
-          // Só atualiza o resumo: o formulário de edição ao lado mantém o que a pessoa digitou.
           this.opportunity.set(updated);
           this.transferSaving.set(false);
           this.transferOpen.set(false);
@@ -224,7 +223,6 @@ export class OpportunityDetailPage {
       })
       .subscribe({
         next: (updated) => {
-          // Só atualiza o resumo: o formulário de edição ao lado mantém o que a pessoa digitou.
           this.opportunity.set(updated);
           this.contactSaving.set(false);
           this.contactOpen.set(false);

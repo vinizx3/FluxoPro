@@ -1,6 +1,6 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { DialogDirective } from '../../shared/dialog';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, effect, untracked } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Customer, CustomerApi } from '../../core/customer';
@@ -17,10 +17,11 @@ import {
   allowedTargets,
   nextStepOverdue,
 } from '../../core/opportunity';
-import { STALL_DAYS, daysSince, isCold, sumAmounts } from '../../core/stall';
+import { daysSince, isCold, sumAmounts } from '../../core/stall';
 import { Thermometer } from '../../shared/thermometer';
 import { followUpUrl } from '../../core/whatsapp';
 import { todayIso } from '../../core/project';
+import { CompanySettingsState } from '../../core/settings';
 
 interface PendingLoss {
   opportunity: Opportunity;
@@ -47,7 +48,9 @@ export class FunnelPage {
   private readonly fb = inject(FormBuilder);
 
   protected readonly label = STATUS_LABEL;
-  protected readonly stallDays = STALL_DAYS;
+  private readonly settings = inject(CompanySettingsState);
+  protected readonly stallDays = this.settings.stalledAfterDays;
+  private loadedStallDays: number | null = null;
 
   protected readonly board = signal<Board>({});
   protected readonly stalled = signal<StalledOpportunity[]>([]);
@@ -91,6 +94,12 @@ export class FunnelPage {
 
   constructor() {
     this.reload();
+    effect(() => {
+      const days = this.settings.stalledAfterDays();
+      if (days !== this.loadedStallDays) {
+        untracked(() => this.loadStalled());
+      }
+    });
   }
 
   protected reload(): void {
@@ -111,7 +120,6 @@ export class FunnelPage {
     this.loadClosed(true);
   }
 
-  /** Ganhas e perdidas, mais recentes primeiro. Se falhar, o funil continua funcionando. */
   protected loadClosed(reset: boolean): void {
     const page = reset ? 0 : this.closedPage() + 1;
     this.api.closed(page).subscribe({
@@ -127,10 +135,12 @@ export class FunnelPage {
   }
 
   private loadStalled(): void {
-    this.api.stalled(STALL_DAYS).subscribe({
-      next: (page) => this.stalled.set(page.content),
-      error: () => this.stalled.set([]),
-    });
+  const days = this.settings.stalledAfterDays();
+  this.loadedStallDays = days;
+  this.api.stalled(days).subscribe({
+    next: (page) => this.stalled.set(page.content),
+    error: () => this.stalled.set([]),
+  });
   }
 
   protected cold(o: Opportunity): boolean {
@@ -155,7 +165,6 @@ export class FunnelPage {
     el?.focus();
   }
 
-  // ---- nova negociação ----
   protected openNew(): void {
     this.newForm.reset({ customerId: '', title: '', amount: null });
     this.newError.set(null);
@@ -209,7 +218,6 @@ export class FunnelPage {
       });
   }
 
-  // ---- mover ----
   protected onSelect(o: Opportunity, event: Event): void {
     const select = event.target as HTMLSelectElement;
     const target = select.value as OpportunityStatus | '';

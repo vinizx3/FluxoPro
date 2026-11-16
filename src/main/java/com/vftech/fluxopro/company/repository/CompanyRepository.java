@@ -1,6 +1,7 @@
 package com.vftech.fluxopro.company.repository;
 
 import com.vftech.fluxopro.company.entity.Company;
+import com.vftech.fluxopro.company.dto.CompanyThreshold;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -11,4 +12,6 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
 
     @Query("select c.id from Company c")
     List<UUID> findAllIds();
+
+    List<CompanyThreshold> findAllProjectedBy();
 }

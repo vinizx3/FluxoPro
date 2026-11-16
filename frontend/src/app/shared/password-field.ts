@@ -1,11 +1,6 @@
 import { Component, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-/**
- * Campo de senha com botão "Mostrar/Ocultar".
- * Funciona com formControlName/formControl, como um input comum.
- * O `<label for="...">` da tela aponta para `fieldId`, que é o id do input de verdade.
- */
 @Component({
   selector: 'app-password-field',
   templateUrl: './password-field.html',

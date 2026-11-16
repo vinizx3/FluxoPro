@@ -19,7 +19,6 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   CANCELLED: 'Cancelado',
 };
 
-/** Classe visual da etiqueta de cada etapa (definida em styles.scss). */
 export const PROJECT_STATUS_PILL: Record<ProjectStatus, string> = {
   PLANNING: 'planning',
   IN_PROGRESS: 'progress',
@@ -27,7 +26,7 @@ export const PROJECT_STATUS_PILL: Record<ProjectStatus, string> = {
   CANCELLED: 'cancelled',
 };
 
-/** Espelha ProjectStatus.canMoveTo do backend. O backend continua sendo quem decide. */
+
 const ALLOWED: Record<ProjectStatus, ProjectStatus[]> = {
   PLANNING: ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['DELIVERED', 'CANCELLED'],
@@ -43,14 +42,12 @@ export function isProjectOpen(status: ProjectStatus): boolean {
   return status === 'PLANNING' || status === 'IN_PROGRESS';
 }
 
-/** Hoje no formato yyyy-MM-dd, no fuso do navegador (o mesmo formato do LocalDate do backend). */
 export function todayIso(now: Date = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-/** Atrasado: ainda aberto e com a data prevista de entrega já passada. */
 export function isOverdue(
   status: ProjectStatus,
   expectedDeliveryDate: string | null,

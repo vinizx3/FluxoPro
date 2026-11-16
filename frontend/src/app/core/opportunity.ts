@@ -5,7 +5,6 @@ import { API_BASE } from './api';
 export type OpportunityStatus =
   'LEAD' | 'QUALIFICATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
 
-/** Etapas abertas, na ordem das colunas do funil. */
 export const OPEN_STATUSES: OpportunityStatus[] = [
   'LEAD',
   'QUALIFICATION',
@@ -22,7 +21,6 @@ export const STATUS_LABEL: Record<OpportunityStatus, string> = {
   LOST: 'Perdida',
 };
 
-/** Espelha as transições permitidas do backend (OpportunityStatus.canMoveTo). O backend continua sendo quem decide. */
 const ALLOWED: Record<OpportunityStatus, OpportunityStatus[]> = {
   LEAD: ['QUALIFICATION', 'LOST'],
   QUALIFICATION: ['LEAD', 'PROPOSAL', 'LOST'],
@@ -48,7 +46,6 @@ export interface Opportunity {
   status: OpportunityStatus;
   lostReason: string | null;
   statusChangedAt: string;
-  /** Última atividade: o que for mais recente entre a mudança de etapa e o último contato. */
   lastActivityAt?: string;
   nextStepAt?: string | null;
   nextStepNote?: string | null;
@@ -119,12 +116,10 @@ export interface Contact {
 export interface ContactRequest {
   kind: ContactKind;
   note: string;
-  /** yyyy-MM-dd; vazio quando não há próximo passo marcado. */
   nextStepAt: string | null;
   nextStepNote: string | null;
 }
 
-/** Data usada pelo termômetro: a última atividade, ou a mudança de etapa se o backend ainda não enviou. */
 export function activityDate(o: {
   lastActivityAt?: string | null;
   statusChangedAt: string;
@@ -132,7 +127,6 @@ export function activityDate(o: {
   return o.lastActivityAt ?? o.statusChangedAt;
 }
 
-/** Próximo passo vencido: a data marcada já passou (datas no formato yyyy-MM-dd). */
 export function nextStepOverdue(nextStepAt: string | null | undefined, today: string): boolean {
   return !!nextStepAt && nextStepAt < today;
 }

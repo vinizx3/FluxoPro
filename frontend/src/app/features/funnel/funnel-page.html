@@ -23,7 +23,7 @@
     }
   </h2>
   @if (stalled().length === 0) {
-    <p class="cooling-empty">Nenhuma negociação parada há {{ stallDays }} dias ou mais.</p>
+    <p class="cooling-empty">Nenhuma negociação parada há {{ stallDays() }} dias ou mais.</p>
   } @else {
     <ul class="cooling-list">
       @for (s of stalled(); track s.id) {

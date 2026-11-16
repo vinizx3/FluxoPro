@@ -1,10 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-/**
- * Transforma um erro da API em uma frase para a pessoa que usa o sistema.
- * A API responde em inglês (formato ProblemDetail); a interface fala português,
- * então a mensagem vem do status HTTP, e cada tela pode trocar a frase de um status.
- */
 export function errorMessage(
   error: unknown,
   overrides: Partial<Record<number, string>> = {},

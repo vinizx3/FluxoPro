@@ -11,7 +11,6 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-/** Valida, no grupo do formulário, se a confirmação é igual à nova senha e se ela mudou. */
 export function passwordChangeValidator(group: AbstractControl): ValidationErrors | null {
   const current = group.get('currentPassword')?.value as string | undefined;
   const next = group.get('newPassword')?.value as string | undefined;

@@ -1,0 +1,43 @@
+<div class="page-head">
+  <h1>Configurações</h1>
+</div>
+<p class="muted lead">Ajuste como o FluxoPro avisa a sua equipe.</p>
+
+<form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h2>Negociação esfriando</h2>
+  <p class="muted">
+    Depois de quantos dias sem atividade uma negociação passa a aparecer como parada: no funil, nos
+    alertas e no painel. Os alertas automáticos rodam todo dia às 8h.
+  </p>
+
+  <div class="field">
+    <label for="s-days">Dias sem atividade</label>
+    <input
+      id="s-days"
+      type="number"
+      inputmode="numeric"
+      step="1"
+      [attr.min]="min"
+      [attr.max]="max"
+      formControlName="days"
+      [attr.aria-invalid]="form.controls.days.touched && form.controls.days.invalid"
+    />
+    <span class="muted">Entre {{ min }} e {{ max }} dias. O padrão é 7.</span>
+    @if (form.controls.days.touched && form.controls.days.invalid) {
+      <span class="field-error">Informe um número inteiro entre {{ min }} e {{ max }}.</span>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="msg error" role="alert">{{ error() }}</p>
+  }
+  @if (notice()) {
+    <p class="msg ok" role="status">{{ notice() }}</p>
+  }
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Salvando…' : 'Salvar' }}
+    </button>
+  </div>
+</form>

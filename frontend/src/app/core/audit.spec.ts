@@ -22,4 +22,9 @@ describe('audit formatting', () => {
     expect(fieldLabel('title')).toBe('Título');
     expect(fieldLabel('novoCampo')).toBe('novoCampo');
   });
+
+  it('shows the stalled threshold in days', () => {
+    expect(formatValue('stalledAfterDays', '7')).toBe('7 dias');
+    expect(formatValue('stalledAfterDays', '1')).toBe('1 dia');
+  });
 });
