@@ -19,7 +19,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 ### Para quem vende
 
 - **Funil Kanban:** Lead, Qualificação, Proposta e Negociação, com as regras de movimentação aplicadas. Negociações encerradas (ganhas e perdidas) ficam numa lista própria.
-- **Termômetro de atividade:** cada cartão mostra os dias sem movimento (a última atividade é a mais recente entre a mudança de etapa e o último contato). Passou de 7 dias, a negociação aparece na faixa "Esfriando agora", com o valor total em risco.
+- **Termômetro de atividade:** cada cartão mostra os dias sem movimento (a última atividade é a mais recente entre a mudança de etapa e o último contato). Passou do limite da empresa (7 dias por padrão, ajustável pelo dono de 1 a 90), a negociação aparece na faixa "Esfriando agora", com o valor total em risco.
 - **Contatos e próximo passo:** registro de ligação, WhatsApp, e-mail ou reunião. Cada contato reinicia o termômetro, e o próximo passo agendado aparece no cartão, com destaque quando está vencido.
 - **WhatsApp com um clique:** botão que abre a conversa com uma mensagem de acompanhamento pronta, no funil, nos clientes e na negociação.
 - **Clientes e projetos:** cadastro de clientes com busca. Quando uma negociação é ganha, o projeto nasce sozinho, ligado ao cliente e à venda de origem.
@@ -30,7 +30,8 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Painel:** valor em aberto, valor esfriando, ganhas, taxa de conversão, tempo médio até ganhar, negociações por etapa, motivos de perda e o desempenho de cada vendedor, em períodos de 30 dias, 90 dias ou 12 meses.
 - **Equipe:** o dono cria, ativa e desativa vendedores.
 - **Transferência de negociação:** o dono passa uma negociação aberta para outro vendedor, e a mudança fica registrada.
-- **Histórico (auditoria):** quem criou, editou, moveu ou arquivou o quê, com o valor antigo e o novo.
+- **Configurações:** o dono define depois de quantos dias sem atividade uma negociação é considerada parada. O valor vale para o funil, os alertas e o painel, e é por empresa.
+- **Histórico (auditoria):** quem criou, editou, moveu ou arquivou o quê, com o valor antigo e o novo. Mudanças nas configurações da empresa também ficam registradas.
 
 ### Segurança e confiabilidade
 
@@ -39,7 +40,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT (60 minutos). As senhas usam hash BCrypt. Cada usuário pode trocar a própria senha informando a atual.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio.
 - **Erros consistentes:** regra de negócio violada devolve `422`, conflito de edição `409` e recurso de outra empresa `404`, todos no mesmo formato.
-- **Testes automatizados:** 133 no backend (regras de domínio, services com Mockito e contexto da aplicação) e 54 no frontend.
+- **Testes automatizados:** 151 no backend (regras de domínio, services com Mockito e contexto da aplicação) e 64 no frontend.
 
 ### Regras do funil
 
@@ -222,6 +223,8 @@ curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 | PUT | `/projects/{id}` | Edita nome, descrição e data prevista (exige `version`) |
 | PATCH | `/projects/{id}/status` | Move para outra etapa (exige `version`) |
 | POST | `/projects/{id}/archive` | Arquiva um projeto entregue ou cancelado |
+| GET | `/company/settings` | Configurações da empresa: dias para uma negociação ser considerada parada (qualquer usuário logado) |
+| PUT | `/company/settings` | Altera os dias para parada, de 1 a 90 (somente `OWNER`; a mudança vai para o histórico) |
 | GET | `/dashboard?days=` | Números do painel da empresa (somente `OWNER`; de 7 a 365 dias) |
 | GET | `/audit-log?entityType=&entityId=&page=&size=` | Histórico de alterações, mais recentes primeiro (somente `OWNER`) |
 | GET | `/notifications?unreadOnly=&page=&size=` | Notificações do usuário logado |
@@ -269,7 +272,7 @@ Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa exec
 | 2 | Funil comercial (Kanban), edição, arquivamento e paginação | Concluída |
 | 3 | Projetos criados a partir de oportunidades ganhas | Concluída |
 | 4 | Auditoria (quem alterou o quê e quando) | Concluída |
-| 5 | Alertas de negociação parada (job diário e notificações) | Concluída |
+| 5 | Alertas de negociação parada (job diário e notificações), com limite configurável por empresa | Concluída |
 | 6 | Frontend em Angular: funil, clientes, projetos, equipe, histórico, alertas, painel, contatos e transferência | Concluída |
 | 7a | Docker (imagens, Compose de produção) e CI com GitHub Actions | Concluída |
 | 7b | Publicação com HTTPS, e-mail (resumo diário e "esqueci minha senha") e contas de demonstração | Próxima |
