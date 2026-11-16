@@ -6,12 +6,10 @@ import { API_BASE } from './api';
 
 export type Role = 'OWNER' | 'SELLER';
 
-/** O que o front precisa saber sobre quem está logado, lido do próprio token. */
 export interface Session {
   userId: string;
   companyId: string;
   role: Role;
-  /** Instante de expiração, em milissegundos. */
   expiresAt: number;
 }
 
@@ -50,10 +48,6 @@ function decodePayload(token: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * Lê o papel e a empresa do token só para decidir o que MOSTRAR na tela.
- * Isto NÃO é segurança: quem autoriza de verdade é o backend (403 e 404).
- */
 export function parseToken(token: string | null, now: number = Date.now()): Session | null {
   if (!token) {
     return null;
@@ -80,7 +74,13 @@ export function parseToken(token: string | null, now: number = Date.now()): Sess
 
 function readStoredToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token && parseToken(token) === null) {
+      // Vencido ou inválido: descarta para nunca mais ser enviado.
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+    return token;
   } catch {
     return null;
   }
@@ -124,7 +124,7 @@ export class AuthService {
         localStorage.removeItem(TOKEN_KEY);
       }
     } catch {
-      // Sem armazenamento (janela privada, por exemplo): a sessão vale só até recarregar.
+      // No access to browser storage: the token remains only in memory.
     }
     this.tokenState.set(token);
   }

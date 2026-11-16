@@ -1,4 +1,8 @@
-import { parseToken } from './auth.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService, parseToken } from './auth.service';
 
 function makeToken(payload: object): string {
   const encode = (o: object) =>
@@ -30,5 +34,24 @@ describe('parseToken', () => {
   it('rejects garbage and null', () => {
     expect(parseToken('abc', now)).toBeNull();
     expect(parseToken(null, now)).toBeNull();
+  });
+});
+
+describe('AuthService stored token', () => {
+  afterEach(() => localStorage.clear());
+
+  it('drops an expired token when the app starts', () => {
+    localStorage.setItem(
+      'fluxopro.token',
+      makeToken({ sub: 'u1', companyId: 'c1', role: 'OWNER', exp: 1 }),
+    );
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+
+    const auth = TestBed.inject(AuthService);
+
+    expect(auth.token()).toBeNull();
+    expect(localStorage.getItem('fluxopro.token')).toBeNull();
   });
 });
