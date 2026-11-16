@@ -35,7 +35,6 @@ export interface Dashboard {
   wonAmount: number;
   lostCount: number;
   lostAmount: number;
-  /** De 0 a 1; nulo quando nada foi fechado no período. */
   conversionRate: number | null;
   averageDaysToWin: number | null;
   stages: StageStats[];
@@ -60,7 +59,6 @@ export class DashboardApi {
   }
 }
 
-/** Largura (0 a 100) de uma barra em relação ao maior valor da lista. */
 export function barWidth(value: number, max: number): number {
   if (max <= 0 || value <= 0) {
     return 0;
@@ -68,14 +66,12 @@ export function barWidth(value: number, max: number): number {
   return Math.max(4, Math.round((value / max) * 100));
 }
 
-/** "1 dia", "2,5 dias": o tempo médio até ganhar, no jeito que se fala. */
 export function formatDays(days: number): string {
   const rounded = Math.round(days * 10) / 10;
   const text = String(rounded).replace('.', ',');
   return rounded === 1 ? '1 dia' : `${text} dias`;
 }
 
-/** Texto curto que explica a taxa de conversão. */
 export function conversionNote(won: number, lost: number): string {
   const closed = won + lost;
   if (closed === 0) {

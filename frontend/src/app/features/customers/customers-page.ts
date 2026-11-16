@@ -29,7 +29,6 @@ export class CustomersPage {
   protected readonly pageIndex = signal(0);
   protected readonly search = signal('');
 
-  /** null = fechado; 'new' = cadastrando; Customer = editando. */
   protected readonly editing = signal<Customer | 'new' | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);

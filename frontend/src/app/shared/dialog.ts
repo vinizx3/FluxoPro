@@ -3,10 +3,6 @@ import { AfterViewInit, Directive, ElementRef, OnDestroy, inject, output } from 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/**
- * Comportamento de janela modal acessível:
- * leva o foco para dentro ao abrir, prende o Tab na janela, fecha com Esc e devolve o foco a quem abriu.
- */
 @Directive({
   selector: '[appDialog]',
   host: { tabindex: '-1', '(keydown)': 'onKeydown($event)' },

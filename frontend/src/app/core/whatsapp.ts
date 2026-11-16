@@ -1,8 +1,3 @@
-/**
- * Monta o link do WhatsApp (wa.me) a partir de um telefone digitado do jeito brasileiro.
- * Aceita "(61) 99999-0000", "61999990000" ou "+55 61 99999-0000".
- * Devolve null quando o número não parece um telefone brasileiro válido.
- */
 export function whatsappUrl(phone: string | null | undefined, message?: string): string | null {
   if (!phone) {
     return null;
@@ -21,7 +16,6 @@ export function whatsappUrl(phone: string | null | undefined, message?: string):
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-/** Link do WhatsApp com uma mensagem inicial sobre a negociação. */
 export function followUpUrl(phone: string | null | undefined, title: string): string | null {
   return whatsappUrl(phone, `Olá! Tudo bem? Passando para falar sobre "${title}".`);
 }

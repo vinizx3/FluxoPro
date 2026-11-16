@@ -121,7 +121,6 @@ export class ProjectsPage {
     });
   }
 
-  // ---- novo projeto ----
   protected openNew(): void {
     this.newForm.reset({ customerId: '', name: '', description: '', expectedDeliveryDate: '' });
     this.newError.set(null);
