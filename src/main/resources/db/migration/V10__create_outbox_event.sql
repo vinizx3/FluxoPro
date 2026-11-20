@@ -1,0 +1,12 @@
+CREATE TABLE outbox_event (
+    id             UUID PRIMARY KEY,
+    aggregate_type VARCHAR(50) NOT NULL,
+    aggregate_id   UUID        NOT NULL,
+    event_type     VARCHAR(50) NOT NULL,
+    company_id     UUID        NOT NULL,
+    payload        JSONB       NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL,
+    published_at   TIMESTAMPTZ
+    );
+
+CREATE INDEX idx_outbox_event_pending ON outbox_event (created_at) WHERE published_at IS NULL;

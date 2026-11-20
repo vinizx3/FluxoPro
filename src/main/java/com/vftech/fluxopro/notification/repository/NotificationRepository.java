@@ -38,4 +38,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             """)
     int markAllRead(@Param("companyId") UUID companyId, @Param("userId") UUID userId,
                     @Param("now") Instant now);
+
+    boolean existsBySourceEventIdAndRecipientId(UUID sourceEventId, UUID recipientId);
 }
