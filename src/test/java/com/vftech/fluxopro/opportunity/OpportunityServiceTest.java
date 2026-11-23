@@ -13,14 +13,17 @@ import com.vftech.fluxopro.opportunity.dto.OpportunityResponse;
 import com.vftech.fluxopro.opportunity.dto.OpportunityUpdateRequest;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
+import com.vftech.fluxopro.opportunity.event.OpportunityEventPayload;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
+import com.vftech.fluxopro.outbox.service.OutboxService;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,9 +44,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OpportunityServiceTest {
@@ -63,6 +65,8 @@ class OpportunityServiceTest {
     ApplicationEventPublisher events;
     @Mock
     AuditRecorder audit;
+    @Mock
+    OutboxService outbox;
 
     private final UUID companyId = UUID.randomUUID();
     private final UUID sellerId = UUID.randomUUID();
@@ -73,7 +77,7 @@ class OpportunityServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        service = new OpportunityService(opportunities, customers, companies, users, clock, events, audit);
+        service = new OpportunityService(opportunities, customers, companies, users, clock, events, audit, outbox);
     }
 
     private AuthenticatedUser owner() {
@@ -227,5 +231,82 @@ class OpportunityServiceTest {
         assertThatThrownBy(() -> service.update(
                 seller(), id, new OpportunityUpdateRequest("New title", BigDecimal.ONE, 0L)))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void moveToWonRecordsTheStatusChangeInTheOutbox() {
+        UUID id = UUID.randomUUID();
+        Opportunity opportunity = opportunityOwnedBy(sellerId);
+        ReflectionTestUtils.setField(opportunity, "id", id);
+        ReflectionTestUtils.setField(opportunity.getCompany(), "id", companyId);
+        opportunity.changeStatus(OpportunityStatus.QUALIFICATION, null, CREATED_AT);
+        opportunity.changeStatus(OpportunityStatus.PROPOSAL, null, CREATED_AT);
+        opportunity.changeStatus(OpportunityStatus.NEGOTIATION, null, CREATED_AT);
+        when(opportunities.findByIdAndCompanyId(id, companyId)).thenReturn(Optional.of(opportunity));
+
+        service.move(seller(), id, new MoveStatusRequest(OpportunityStatus.WON, null, 0L));
+
+        ArgumentCaptor<OpportunityEventPayload> payload = ArgumentCaptor.forClass(OpportunityEventPayload.class);
+        verify(outbox).append(eq("OPPORTUNITY"), eq(id), eq("OPPORTUNITY_STATUS_CHANGED"),
+                eq(companyId), payload.capture());
+        assertThat(payload.getValue().fromStatus()).isEqualTo("NEGOTIATION");
+        assertThat(payload.getValue().toStatus()).isEqualTo("WON");
+        assertThat(payload.getValue().ownerId()).isEqualTo(sellerId);
+        assertThat(payload.getValue().actorId()).isEqualTo(sellerId);
+        assertThat(payload.getValue().title()).isEqualTo("Deal");
+        assertThat(payload.getValue().amount()).isEqualByComparingTo(BigDecimal.TEN);
+        assertThat(payload.getValue().occurredAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void createRecordsTheCreationInTheOutbox() {
+        AuthenticatedUser user = owner();
+        UUID customerId = UUID.randomUUID();
+        Company company = new Company("Acme");
+        Customer customer = new Customer(company, "Client", null, null);
+        User creator = new User(company, "Owner", "owner@acme.com", "hash",
+                com.vftech.fluxopro.user.entity.Role.OWNER);
+        when(customers.findByIdAndCompanyIdAndArchivedAtIsNull(customerId, companyId))
+                .thenReturn(Optional.of(customer));
+        when(companies.getReferenceById(companyId)).thenReturn(company);
+        when(users.getReferenceById(user.id())).thenReturn(creator);
+        when(opportunities.save(any(Opportunity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.create(user, new OpportunityRequest(customerId, "  Deal  ", BigDecimal.TEN));
+
+        ArgumentCaptor<OpportunityEventPayload> payload = ArgumentCaptor.forClass(OpportunityEventPayload.class);
+        verify(outbox).append(eq("OPPORTUNITY"), any(), eq("OPPORTUNITY_CREATED"),
+                eq(companyId), payload.capture());
+        assertThat(payload.getValue().fromStatus()).isNull();
+        assertThat(payload.getValue().toStatus()).isEqualTo("LEAD");
+        assertThat(payload.getValue().title()).isEqualTo("Deal");
+        assertThat(payload.getValue().actorId()).isEqualTo(user.id());
+        assertThat(payload.getValue().occurredAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void invalidMoveDoesNotWriteToTheOutbox() {
+        UUID id = UUID.randomUUID();
+        when(opportunities.findByIdAndCompanyId(id, companyId))
+                .thenReturn(Optional.of(opportunityOwnedBy(sellerId)));
+
+        assertThatThrownBy(() -> service.move(
+                seller(), id, new MoveStatusRequest(OpportunityStatus.WON, null, 0L)))
+                .isInstanceOf(BusinessRuleException.class);
+
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void moveWithStaleVersionDoesNotWriteToTheOutbox() {
+        UUID id = UUID.randomUUID();
+        when(opportunities.findByIdAndCompanyId(id, companyId))
+                .thenReturn(Optional.of(opportunityOwnedBy(sellerId)));
+
+        assertThatThrownBy(() -> service.move(
+                seller(), id, new MoveStatusRequest(OpportunityStatus.QUALIFICATION, null, 5L)))
+                .isInstanceOf(ConflictException.class);
+
+        verifyNoInteractions(outbox);
     }
 }
