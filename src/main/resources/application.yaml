@@ -24,6 +24,13 @@ spring:
     consumer:
       auto-offset-reset: earliest
       enable-auto-commit: false
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail.smtp.connectiontimeout: 3000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 3000
 
 server:
   port: ${PORT:8082}
@@ -34,3 +41,5 @@ app:
     expiration-minutes: 60
   alerts:
     cron: "0 0 8 * * *"
+  mail:
+    from: ${MAIL_FROM:no-reply@fluxopro.local}
