@@ -9,7 +9,7 @@ import org.springframework.kafka.config.TopicBuilder;
 public class KafkaTopicsConfig {
 
     public static final String OPPORTUNITY_EVENTS = "opportunity.events";
-    public static final String OPPORTUNITY_EVENTS_DLT = "opportunity.events.DLT";
+    public static final String OPPORTUNITY_EVENTS_DLT = "opportunity.events-dlt";
 
     @Bean
     NewTopic opportunityEventsTopic() {
