@@ -4,7 +4,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 6 de 13 concluídas (backend e frontend funcionando), mais a parte de Docker e CI/CD da fase 7. A publicação na internet é a próxima etapa (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 6 e 8 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois, e a próxima fase são os testes de integração com Testcontainers (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -24,6 +24,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **WhatsApp com um clique:** botão que abre a conversa com uma mensagem de acompanhamento pronta, no funil, nos clientes e na negociação.
 - **Clientes e projetos:** cadastro de clientes com busca. Quando uma negociação é ganha, o projeto nasce sozinho, ligado ao cliente e à venda de origem.
 - **Alertas:** um job diário (8h, horário de Brasília) avisa o responsável de cada negociação parada, uma única vez por período de parada. Cada usuário tem a sua caixa de entrada, com contador de não lidos.
+- **Avisos de venda ganha e perdida:** quando uma negociação é ganha ou perdida, o dono da empresa e o responsável recebem uma notificação na caixa de entrada e um e-mail. O envio é feito por mensageria (Kafka), fora da requisição de quem moveu a negociação.
 
 ### Para quem gerencia (dono da empresa)
 
@@ -40,7 +41,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT (60 minutos). As senhas usam hash BCrypt. Cada usuário pode trocar a própria senha informando a atual.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio.
 - **Erros consistentes:** regra de negócio violada devolve `422`, conflito de edição `409` e recurso de outra empresa `404`, todos no mesmo formato.
-- **Testes automatizados:** 151 no backend (regras de domínio, services com Mockito e contexto da aplicação) e 64 no frontend.
+- **Testes automatizados:** 184 no backend (regras de domínio, services e consumers com Mockito, e contexto da aplicação) e 67 no frontend.
 
 ### Regras do funil
 
@@ -74,13 +75,15 @@ PLANNING / IN_PROGRESS ----> CANCELLED
 | Backend | Java 21, Spring Boot 4 |
 | Segurança | Spring Security, OAuth2 Resource Server (JWT, HS256), BCrypt |
 | Persistência | PostgreSQL 16, Spring Data JPA (Hibernate), Flyway |
+| Mensageria | Apache Kafka (modo KRaft), Spring for Apache Kafka, padrão Outbox |
+| E-mail | Spring Mail; Mailpit para ver os e-mails em desenvolvimento |
 | Frontend | Angular 22 (componentes standalone, signals, sem zone.js), SCSS, formulários reativos |
 | Testes | JUnit 5, Mockito, AssertJ (backend); Vitest (frontend) |
 | Contêineres | Docker (builds multi-stage), Docker Compose, Nginx |
 | CI/CD | GitHub Actions |
 | Build | Maven (wrapper incluído), Angular CLI |
 
-Planejadas: publicação com HTTPS, e-mail (SMTP), Kafka, Redis, Testcontainers, Micrometer + Prometheus + Grafana.
+Planejadas: publicação com HTTPS, envio de e-mail real em produção (SMTP), Redis, Testcontainers, Micrometer + Prometheus + Grafana.
 
 ## Decisões de arquitetura
 
@@ -97,13 +100,47 @@ Planejadas: publicação com HTTPS, e-mail (SMTP), Kafka, Redis, Testcontainers,
 - **Imagens Docker enxutas e seguras.** O backend usa build em duas etapas (Maven na primeira, só o JRE na segunda) e roda com usuário sem privilégios. O `Dockerfile` copia apenas `pom.xml` e `src`, então o `.env` nunca entra na imagem. O endereço do banco (`DB_URL`) e a porta (`PORT`) podem ser trocados por variável de ambiente, e o padrão continua funcionando no desenvolvimento local.
 - **Mesma origem para o navegador.** Em produção, o Nginx serve o Angular e encaminha `/api` para o backend, então o navegador fala com um único endereço e não precisa de CORS.
 - **CI que reproduz o ambiente real.** A cada push na `main` e a cada pull request, o GitHub Actions roda os testes do backend contra um PostgreSQL 16 de verdade (inclusive as migrations do Flyway), os testes e o build do frontend, e confirma que as duas imagens Docker constroem.
-- **Venda ganha e projeto na mesma transação.** Ao ganhar uma negociação, a aplicação publica um evento interno e o módulo de projetos o consome de forma síncrona. Se a criação do projeto falhar, a venda não é marcada como ganha. O evento carrega só IDs, então na fase 8 ele pode virar uma mensagem Kafka sem mudar a regra de negócio.
+- **Venda ganha e projeto na mesma transação.** Ao ganhar uma negociação, a aplicação publica um evento interno e o módulo de projetos o consome de forma síncrona. Se a criação do projeto falhar, a venda não é marcada como ganha. A mensageria da fase 8 cuida só dos efeitos colaterais (veja [Mensageria com Kafka](#mensageria-com-kafka)).
 - **Idempotência garantida pelo banco.** Um índice único parcial em `source_opportunity_id` impede dois projetos para a mesma venda.
 - **Auditoria somente de inserção, garantida pelo banco.** O histórico é gravado na mesma transação da alteração. Gatilhos (triggers) do PostgreSQL recusam `UPDATE` e `DELETE` nas tabelas de auditoria, então nem um bug na aplicação reescreve o passado.
 - **"Parada" é calculada, não gravada.** Uma negociação está parada se estiver aberta e a última atividade for mais antiga que o limite. Não existe flag para ficar desatualizada.
 - **Alerta idempotente por período de parada.** Uma restrição única `(oportunidade, tipo, stalled_since)` impede notificações repetidas: o job pode rodar duas vezes, ou em duas instâncias, sem duplicar. Se um contato reinicia o termômetro e a negociação esfria de novo, nasce um alerta novo. O job processa uma empresa por vez, cada uma na sua transação.
 - **Frontend sem regra de negócio.** O frontend só decide o que mostrar (por exemplo, esconder o botão "Transferir" de quem não é dono). Quem decide de verdade é sempre a API, que continua validando papel, empresa e versão.
 - **Design "temperatura".** A interface usa uma paleta que vai do frio ao quente para comunicar urgência, com contraste verificado, alvos de toque de 44 px, foco visível e navegação por teclado.
+
+## Mensageria com Kafka
+
+Quando uma negociação é criada ou muda de etapa, a aplicação publica um evento. Os efeitos colaterais (notificação, e-mail e métricas) ficam em consumers independentes. A criação do projeto de uma venda ganha continua síncrona, na mesma transação, porque faz parte da regra de negócio e precisa ser consistente.
+
+```
+API --> PostgreSQL (negociação + outbox_event, na mesma transação)
+                          |
+                    relay (a cada 1 s, FOR UPDATE SKIP LOCKED)
+                          v
+        Kafka: opportunity.events  (chave = id da negociação, 3 partições)
+          |-- grupo "notifications"   --> notificação de venda ganha ou perdida
+          |-- grupo "emails"          --> e-mail (Mailpit em desenvolvimento)
+          `-- grupo "funnel-metrics"  --> tabela funnel_stage_entry
+        mensagens que falham --> opportunity.events-dlt (dead-letter)
+```
+
+| Consumer (grupo) | O que faz | Como evita duplicar |
+|---|---|---|
+| `notifications` | Cria a notificação "ganha" ou "perdida" para os donos da empresa e o responsável | Índice único `(source_event_id, user_id)` |
+| `emails` | Envia o e-mail aos mesmos destinatários | Tabela `sent_email`, gravada logo depois de cada envio |
+| `funnel-metrics` | Conta quantas negociações entraram em cada etapa e o valor na entrada | Tabela `processed_event`, na mesma transação do incremento |
+
+Decisões:
+
+- **Outbox transacional.** O evento é gravado no mesmo banco e na mesma transação da alteração (`Propagation.MANDATORY` impede gravar fora de uma transação). Se o Kafka estiver fora do ar, a venda continua funcionando e o evento é publicado sozinho quando ele voltar.
+- **Relay que preserva a ordem.** Ele só marca o evento como publicado depois da confirmação do broker (`acks=all`, produtor idempotente) e para no primeiro erro, para nunca publicar um evento depois de um mais novo. A entrega é "pelo menos uma vez".
+- **Chave pelo id da negociação.** Todos os eventos da mesma negociação vão para a mesma partição e chegam em ordem.
+- **Consumers idempotentes.** Como o mesmo evento pode chegar duas vezes, cada consumer se protege no banco. Um contador (como o do funil) não é idempotente por natureza, por isso o id do evento é registrado na mesma transação do incremento.
+- **Retry e dead-letter.** Falhas passageiras (por exemplo, servidor de e-mail fora do ar) são repetidas com espera crescente (1, 2, 4 e 8 segundos). Depois disso, a mensagem vai para `opportunity.events-dlt` com a causa do erro. Uma mensagem malformada vai direto para lá. A falha do e-mail não afeta a notificação, porque os grupos são independentes.
+- **Replay.** A tabela do funil é só uma visão derivada dos eventos: dá para apagá-la, voltar o offset do grupo ao início e reconstruí-la com os mesmos números.
+- **Contagem de entradas, não estoque.** A projeção conta as entradas em cada etapa, e não quantas negociações estão em cada uma hoje, porque editar o valor de uma negociação não gera evento.
+
+Limites desta fase: o Kafka roda num único nó, sem cluster, e o volume de eventos é o de um projeto de demonstração. As mensagens na dead-letter não são reprocessadas automaticamente (a recuperação nos testes foi pelo próprio outbox). A tabela do funil ainda não é exibida na interface.
 
 ## Como rodar
 
@@ -132,11 +169,11 @@ Planejadas: publicação com HTTPS, e-mail (SMTP), Kafka, Redis, Testcontainers,
    ```powershell
    $b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
    ```
-3. Suba o PostgreSQL:
+3. Suba o PostgreSQL, o Kafka e o Mailpit:
    ```bash
    docker compose up -d
    ```
-   O container é publicado na porta **5434** do computador, para não conflitar com um PostgreSQL local na 5432.
+   O banco é publicado na porta **5434** (para não conflitar com um PostgreSQL local na 5432), o Kafka na **9092** e o Mailpit na **1025** (SMTP) e **8025** (caixa de entrada em `http://localhost:8025`). O Kafka guarda os dados num volume, e os tópicos são criados pela aplicação ao iniciar.
 4. Suba a aplicação (o Flyway aplica as migrations na inicialização):
    ```bash
    ./mvnw spring-boot:run
@@ -168,6 +205,8 @@ Para subir banco, backend e frontend como em produção, sem instalar JDK nem No
 
 Nessa configuração, o banco não é publicado fora da rede do Docker, e o Nginx encaminha `/api` para o backend.
 
+> O `docker-compose.prod.yml` ainda não inclui Kafka nem Mailpit. Eles entram junto com a publicação (fase 7b), e até lá a mensageria roda só no ambiente de desenvolvimento.
+
 ### Experimente a API
 
 ```bash
@@ -189,6 +228,17 @@ curl -X POST http://localhost:8082/opportunities \
 
 curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 ```
+
+### Ver a mensageria funcionando
+
+1. Mova uma negociação até **Ganha** na interface. O e-mail aparece em `http://localhost:8025` e a notificação, na página de alertas.
+2. Para ver as mensagens no Kafka:
+   ```bash
+   docker exec fluxopro-kafka /opt/kafka/bin/kafka-console-consumer.sh \
+     --bootstrap-server localhost:9092 --topic opportunity.events --from-beginning \
+     --property print.key=true --property print.headers=true
+   ```
+3. Para ver o Outbox em ação, pare o Kafka (`docker stop fluxopro-kafka`), mova uma negociação (a venda funciona normalmente) e suba o Kafka de novo (`docker start fluxopro-kafka`). O evento, guardado em `outbox_event`, é publicado sozinho.
 
 ## Visão geral da API
 
@@ -227,7 +277,7 @@ curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 | PUT | `/company/settings` | Altera os dias para parada, de 1 a 90 (somente `OWNER`; a mudança vai para o histórico) |
 | GET | `/dashboard?days=` | Números do painel da empresa (somente `OWNER`; de 7 a 365 dias) |
 | GET | `/audit-log?entityType=&entityId=&page=&size=` | Histórico de alterações, mais recentes primeiro (somente `OWNER`) |
-| GET | `/notifications?unreadOnly=&page=&size=` | Notificações do usuário logado |
+| GET | `/notifications?unreadOnly=&page=&size=` | Notificações do usuário logado (negociação parada, ganha ou perdida) |
 | GET | `/notifications/unread-count` | Quantidade de notificações não lidas |
 | POST | `/notifications/{id}/read` | Marca uma notificação como lida |
 | POST | `/notifications/read-all` | Marca todas como lidas |
@@ -250,7 +300,7 @@ cd frontend
 npm test
 ```
 
-O teste de contexto do backend precisa do banco rodando (`docker compose up -d`). Na fase 9, ele passa a usar Testcontainers: os testes sobem o próprio PostgreSQL e Kafka.
+O teste de contexto do backend precisa do banco rodando (`docker compose up -d`, que também sobe o Kafka e o Mailpit). Os testes dos consumers e do relay são unitários, com Mockito. Na fase 9, os testes de integração passam a usar Testcontainers: eles sobem o próprio PostgreSQL e Kafka, e é ali que a projeção do funil (SQL com `ON CONFLICT`) ganha teste contra um banco real.
 
 ### Integração contínua
 
@@ -275,9 +325,9 @@ Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa exec
 | 5 | Alertas de negociação parada (job diário e notificações), com limite configurável por empresa | Concluída |
 | 6 | Frontend em Angular: funil, clientes, projetos, equipe, histórico, alertas, painel, contatos e transferência | Concluída |
 | 7a | Docker (imagens, Compose de produção) e CI com GitHub Actions | Concluída |
-| 7b | Publicação com HTTPS, e-mail (resumo diário e "esqueci minha senha") e contas de demonstração | Próxima |
-| 8 | Kafka: o evento "negociação ganha" (hoje interno) vira mensagem, com Outbox | Planejada |
-| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka) | Planejada |
+| 7b | Publicação com HTTPS, e-mail real em produção (resumo diário e "esqueci minha senha") e contas de demonstração | Adiada |
+| 8 | Kafka com Outbox transacional: eventos da negociação, consumers independentes (notificação, e-mail e métricas do funil), retry com dead-letter e replay | Concluída |
+| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka) | Próxima |
 | 10 | Cache com Redis, com latência medida antes e depois | Planejada |
 | 11 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana | Planejada |
 | 12 | Upload de documentos | Planejada |
