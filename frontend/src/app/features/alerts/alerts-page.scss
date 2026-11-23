@@ -25,6 +25,12 @@
     &.unread {
       border-left-color: var(--hot);
     }
+    &.unread.won {
+      border-left-color: var(--success, #16a34a);
+    }
+    &.unread.lost {
+      border-left-color: var(--text-muted);
+    }
   }
   .text {
     display: grid;

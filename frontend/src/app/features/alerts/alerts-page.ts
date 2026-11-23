@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { errorMessage } from '../../core/error-message';
-import { AppNotification, NotificationApi, NotificationState } from '../../core/notification';
+import { AppNotification, NotificationApi, NotificationState, notificationSummary } from '../../core/notification';
 import { PageResponse } from '../../core/opportunity';
 
 type Filter = 'all' | 'unread';
@@ -16,6 +16,7 @@ type Filter = 'all' | 'unread';
 export class AlertsPage {
   private readonly api = inject(NotificationApi);
   protected readonly state = inject(NotificationState);
+  protected readonly summary = notificationSummary;
 
   protected readonly filter = signal<Filter>('unread');
   protected readonly pageIndex = signal(0);
