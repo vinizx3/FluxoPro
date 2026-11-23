@@ -32,8 +32,11 @@ public class Notification {
     @JoinColumn(name = "opportunity_id", nullable = false, updatable = false)
     private Opportunity opportunity;
 
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant stalledSince;
+
+    @Column(updatable = false)
+    private UUID sourceEventId;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -63,12 +66,19 @@ public class Notification {
         return readAt != null;
     }
 
+    public static Notification forClosedOpportunity(Company company, User recipient, NotificationType type, Opportunity opportunity, UUID sourceEventId, Instant now) {
+        Notification notification = new Notification(company, recipient, type, opportunity, null, now);
+        notification.sourceEventId = sourceEventId;
+        return notification;
+    }
+
     public UUID getId() { return id; }
     public Company getCompany() { return company; }
     public User getRecipient() { return recipient; }
     public NotificationType getType() { return type; }
     public Opportunity getOpportunity() { return opportunity; }
     public Instant getStalledSince() { return stalledSince; }
+    public UUID getSourceEventId() { return sourceEventId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getReadAt() { return readAt; }
 }

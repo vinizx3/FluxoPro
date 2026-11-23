@@ -15,9 +15,11 @@ import com.vftech.fluxopro.customer.repository.CustomerRepository;
 import com.vftech.fluxopro.opportunity.dto.*;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.entity.OpportunityStatus;
+import com.vftech.fluxopro.opportunity.event.OpportunityEventPayload;
 import com.vftech.fluxopro.opportunity.event.OpportunityWonEvent;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
 import com.vftech.fluxopro.common.security.AuthenticatedUser;
+import com.vftech.fluxopro.outbox.service.OutboxService;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -49,8 +51,9 @@ public class OpportunityService {
     private final Clock clock;
     private final ApplicationEventPublisher events;
     private final AuditRecorder audit;
+    private final OutboxService outbox;
 
-    public OpportunityService(OpportunityRepository opportunities, CustomerRepository customers, CompanyRepository companies, UserRepository users, Clock clock, ApplicationEventPublisher events, AuditRecorder audit) {
+    public OpportunityService(OpportunityRepository opportunities, CustomerRepository customers, CompanyRepository companies, UserRepository users, Clock clock, ApplicationEventPublisher events, AuditRecorder audit, OutboxService outbox) {
         this.opportunities = opportunities;
         this.customers = customers;
         this.companies = companies;
@@ -58,6 +61,7 @@ public class OpportunityService {
         this.clock = clock;
         this.events = events;
         this.audit = audit;
+        this.outbox = outbox;
     }
 
     @Transactional
@@ -75,6 +79,11 @@ public class OpportunityService {
                         .track("amount", null, opportunity.getAmount())
                         .track("customerId", null, request.customerId())
                         .build());
+        outbox.append("OPPORTUNITY", opportunity.getId(), "OPPORTUNITY_CREATED", user.companyId(),
+                new OpportunityEventPayload(
+                        opportunity.getId(), user.companyId(), customer.getId(), user.id(), user.id(),
+                        opportunity.getTitle(), opportunity.getAmount(),
+                        null, opportunity.getStatus().name(), Instant.now(clock)));
         return OpportunityResponse.from(opportunity);
     }
 
@@ -130,6 +139,14 @@ public class OpportunityService {
                         .track("status", statusBefore, opportunity.getStatus())
                         .track("lostReason", lostReasonBefore, opportunity.getLostReason())
                         .build());
+
+        outbox.append("OPPORTUNITY", opportunity.getId(), "OPPORTUNITY_STATUS_CHANGED",
+                opportunity.getCompany().getId(),
+                new OpportunityEventPayload(
+                        opportunity.getId(), opportunity.getCompany().getId(),
+                        opportunity.getCustomer().getId(), opportunity.getOwner().getId(), user.id(),
+                        opportunity.getTitle(), opportunity.getAmount(),
+                        statusBefore.name(), opportunity.getStatus().name(), Instant.now(clock)));
 
         if (opportunity.getStatus() == OpportunityStatus.WON) {
             events.publishEvent(new OpportunityWonEvent(

@@ -53,13 +53,14 @@
   } @else {
     <ul class="list">
       @for (n of page.content; track n.id) {
-        <li [class.unread]="!n.readAt">
+        <li
+          [class.unread]="!n.readAt"
+          [class.won]="n.type === 'OPPORTUNITY_WON'"
+          [class.lost]="n.type === 'OPPORTUNITY_LOST'"
+        >
           <div class="text">
             <strong>{{ n.opportunityTitle }}</strong>
-            <span
-              >{{ n.customerName }} · parada há {{ n.daysStalled }}
-              {{ n.daysStalled === 1 ? 'dia' : 'dias' }}</span
-            >
+            <span>{{ summary(n) }}</span>
             <small>Avisado em {{ n.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
           </div>
           <div class="actions">

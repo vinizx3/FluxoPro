@@ -11,6 +11,7 @@ import com.vftech.fluxopro.opportunity.dto.StalledOpportunityResponse;
 import com.vftech.fluxopro.opportunity.entity.Opportunity;
 import com.vftech.fluxopro.opportunity.repository.OpportunityRepository;
 import com.vftech.fluxopro.opportunity.service.OpportunityService;
+import com.vftech.fluxopro.outbox.service.OutboxService;
 import com.vftech.fluxopro.user.entity.Role;
 import com.vftech.fluxopro.user.entity.User;
 import com.vftech.fluxopro.user.repository.UserRepository;
@@ -55,14 +56,15 @@ class OpportunityServiceStalledTest {
     ApplicationEventPublisher events;
     @Mock
     AuditRecorder audit;
+    @Mock
+    OutboxService outbox;
 
     private final UUID companyId = UUID.randomUUID();
     private OpportunityService service;
 
     @BeforeEach
     void setUp() {
-        service = new OpportunityService(opportunities, customers, companies, users,
-                Clock.fixed(NOW, ZoneOffset.UTC), events, audit);
+        service = new OpportunityService(opportunities, customers, companies, users, Clock.fixed(NOW, ZoneOffset.UTC), events, audit, outbox);
     }
 
     private AuthenticatedUser owner() {

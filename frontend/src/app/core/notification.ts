@@ -4,16 +4,29 @@ import { map } from 'rxjs';
 import { API_BASE } from './api';
 import { PageResponse } from './opportunity';
 
+export type NotificationType = 'STALLED_OPPORTUNITY' | 'OPPORTUNITY_WON' | 'OPPORTUNITY_LOST';
+
 export interface AppNotification {
   id: string;
-  type: string;
+  type: NotificationType;
   opportunityId: string;
   opportunityTitle: string;
   customerName: string;
-  stalledSince: string;
+  stalledSince: string | null;
   daysStalled: number;
   createdAt: string;
   readAt: string | null;
+}
+
+export function notificationSummary(n: AppNotification): string {
+  switch (n.type) {
+    case 'OPPORTUNITY_WON':
+      return `${n.customerName} · negociação ganha`;
+    case 'OPPORTUNITY_LOST':
+      return `${n.customerName} · negociação perdida`;
+    default:
+      return `${n.customerName} · parada há ${n.daysStalled} ${n.daysStalled === 1 ? 'dia' : 'dias'}`;
+  }
 }
 
 export function extractCount(response: unknown): number {

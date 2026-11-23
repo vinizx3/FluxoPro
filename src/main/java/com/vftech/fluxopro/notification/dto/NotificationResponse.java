@@ -28,7 +28,7 @@ public record NotificationResponse(
                 opportunity.getTitle(),
                 opportunity.getCustomer().getName(),
                 notification.getStalledSince(),
-                Duration.between(notification.getStalledSince(), now).toDays(),
+                notification.getStalledSince() == null ? 0 : Duration.between(notification.getStalledSince(), now).toDays(),
                 notification.getCreatedAt(),
                 notification.getReadAt());
     }

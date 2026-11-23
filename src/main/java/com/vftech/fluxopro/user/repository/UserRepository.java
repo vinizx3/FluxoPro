@@ -1,5 +1,6 @@
 package com.vftech.fluxopro.user.repository;
 
+import com.vftech.fluxopro.user.entity.Role;
 import com.vftech.fluxopro.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,5 +15,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     List<User> findByCompanyIdOrderByNameAsc(UUID companyId);
+
     Optional<User> findByIdAndCompanyId(UUID id, UUID companyId);
+
+    List<User> findByCompanyIdAndRoleAndActiveTrue(UUID companyId, Role role);
 }
