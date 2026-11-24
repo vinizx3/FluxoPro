@@ -1,13 +1,12 @@
 package com.vftech.fluxopro;
 
+import com.vftech.fluxopro.support.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@IntegrationTest
 class FluxoproApplicationTests {
 
 	@Test
 	void contextLoads() {
 	}
-
 }

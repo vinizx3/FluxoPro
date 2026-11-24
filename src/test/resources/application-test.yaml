@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost/unused
+    username: test
+    password: test
+app:
+  jwt:
+    secret: test-only-jwt-secret-with-more-than-32-bytes-for-hs256
