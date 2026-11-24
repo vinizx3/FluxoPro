@@ -4,7 +4,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 6 e 8 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois, e a próxima fase são os testes de integração com Testcontainers (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 6 e 8 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois, e a fase 9 (testes de integração com Testcontainers) está em andamento (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -41,7 +41,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT (60 minutos). As senhas usam hash BCrypt. Cada usuário pode trocar a própria senha informando a atual.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio.
 - **Erros consistentes:** regra de negócio violada devolve `422`, conflito de edição `409` e recurso de outra empresa `404`, todos no mesmo formato.
-- **Testes automatizados:** 184 no backend (regras de domínio, services e consumers com Mockito, e contexto da aplicação) e 67 no frontend.
+- **Testes automatizados:** 189 no backend (regras de domínio, services e consumers com Mockito, e testes de integração com Testcontainers) e 67 no frontend.
 
 ### Regras do funil
 
@@ -78,12 +78,12 @@ PLANNING / IN_PROGRESS ----> CANCELLED
 | Mensageria | Apache Kafka (modo KRaft), Spring for Apache Kafka, padrão Outbox |
 | E-mail | Spring Mail; Mailpit para ver os e-mails em desenvolvimento |
 | Frontend | Angular 22 (componentes standalone, signals, sem zone.js), SCSS, formulários reativos |
-| Testes | JUnit 5, Mockito, AssertJ (backend); Vitest (frontend) |
+| Testes | JUnit 5, Mockito, AssertJ e Testcontainers (backend); Vitest (frontend) |
 | Contêineres | Docker (builds multi-stage), Docker Compose, Nginx |
 | CI/CD | GitHub Actions |
 | Build | Maven (wrapper incluído), Angular CLI |
 
-Planejadas: publicação com HTTPS, envio de e-mail real em produção (SMTP), Redis, Testcontainers, Micrometer + Prometheus + Grafana.
+Planejadas: publicação com HTTPS, envio de e-mail real em produção (SMTP), Redis, Micrometer + Prometheus + Grafana.
 
 ## Decisões de arquitetura
 
@@ -99,7 +99,7 @@ Planejadas: publicação com HTTPS, envio de e-mail real em produção (SMTP), R
 - **Sem segredos no repositório.** As credenciais do banco e o segredo do JWT vêm de variáveis de ambiente.
 - **Imagens Docker enxutas e seguras.** O backend usa build em duas etapas (Maven na primeira, só o JRE na segunda) e roda com usuário sem privilégios. O `Dockerfile` copia apenas `pom.xml` e `src`, então o `.env` nunca entra na imagem. O endereço do banco (`DB_URL`) e a porta (`PORT`) podem ser trocados por variável de ambiente, e o padrão continua funcionando no desenvolvimento local.
 - **Mesma origem para o navegador.** Em produção, o Nginx serve o Angular e encaminha `/api` para o backend, então o navegador fala com um único endereço e não precisa de CORS.
-- **CI que reproduz o ambiente real.** A cada push na `main` e a cada pull request, o GitHub Actions roda os testes do backend contra um PostgreSQL 16 de verdade (inclusive as migrations do Flyway), os testes e o build do frontend, e confirma que as duas imagens Docker constroem.
+- **CI que reproduz o ambiente real.** A cada push na `main` e a cada pull request, o GitHub Actions roda os testes do backend contra um PostgreSQL 16 e um Kafka de verdade, em containers (inclusive as migrations do Flyway), os testes e o build do frontend, e confirma que as duas imagens Docker constroem.
 - **Venda ganha e projeto na mesma transação.** Ao ganhar uma negociação, a aplicação publica um evento interno e o módulo de projetos o consome de forma síncrona. Se a criação do projeto falhar, a venda não é marcada como ganha. A mensageria da fase 8 cuida só dos efeitos colaterais (veja [Mensageria com Kafka](#mensageria-com-kafka)).
 - **Idempotência garantida pelo banco.** Um índice único parcial em `source_opportunity_id` impede dois projetos para a mesma venda.
 - **Auditoria somente de inserção, garantida pelo banco.** O histórico é gravado na mesma transação da alteração. Gatilhos (triggers) do PostgreSQL recusam `UPDATE` e `DELETE` nas tabelas de auditoria, então nem um bug na aplicação reescreve o passado.
@@ -300,7 +300,7 @@ cd frontend
 npm test
 ```
 
-O teste de contexto do backend precisa do banco rodando (`docker compose up -d`, que também sobe o Kafka e o Mailpit). Os testes dos consumers e do relay são unitários, com Mockito. Na fase 9, os testes de integração passam a usar Testcontainers: eles sobem o próprio PostgreSQL e Kafka, e é ali que a projeção do funil (SQL com `ON CONFLICT`) ganha teste contra um banco real.
+Os testes de integração do backend usam Testcontainers: eles sobem o próprio PostgreSQL 16 e Kafka em containers descartáveis, então precisam apenas do **Docker em execução**, sem `docker compose up` e sem arquivo `.env`. O contexto completo da aplicação (com as migrations do Flyway) é testado assim, e a projeção do funil (SQL com `ON CONFLICT` e deduplicação por evento) tem teste contra um banco real. Os testes dos consumers e do relay são unitários, com Mockito. Ainda falta, na fase 9, o teste ponta a ponta do Outbox até o Kafka e o da dead-letter.
 
 ### Integração contínua
 
@@ -308,7 +308,7 @@ O arquivo `.github/workflows/ci.yml` roda a cada push na `main` e a cada pull re
 
 | Job | O que faz |
 |---|---|
-| `backend` | Sobe um PostgreSQL 16 descartável e roda `mvn verify` (testes e migrations) |
+| `backend` | Roda `mvn verify`; os testes sobem o próprio PostgreSQL e Kafka com Testcontainers (testes e migrations) |
 | `frontend` | Roda `npm ci`, os testes (Vitest) e o build de produção do Angular |
 | `docker` | Constrói as imagens do backend e do frontend (só roda se os dois anteriores passarem) |
 
@@ -327,7 +327,7 @@ Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa exec
 | 7a | Docker (imagens, Compose de produção) e CI com GitHub Actions | Concluída |
 | 7b | Publicação com HTTPS, e-mail real em produção (resumo diário e "esqueci minha senha") e contas de demonstração | Adiada |
 | 8 | Kafka com Outbox transacional: eventos da negociação, consumers independentes (notificação, e-mail e métricas do funil), retry com dead-letter e replay | Concluída |
-| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka) | Próxima |
+| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka): contexto e projeção do funil prontos; falta o ponta a ponta do Outbox e a dead-letter | Em andamento |
 | 10 | Cache com Redis, com latência medida antes e depois | Planejada |
 | 11 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana | Planejada |
 | 12 | Upload de documentos | Planejada |
