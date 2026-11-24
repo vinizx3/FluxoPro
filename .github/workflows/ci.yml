@@ -8,27 +8,6 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: fluxopro
-          POSTGRES_PASSWORD: ci-only-password
-          POSTGRES_DB: fluxopro_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U fluxopro -d fluxopro_ci"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    # Values below exist only for this CI run, against a throwaway database.
-    env:
-      DB_URL: jdbc:postgresql://localhost:5432/fluxopro_ci
-      POSTGRES_DB: fluxopro_ci
-      POSTGRES_USER: fluxopro
-      POSTGRES_PASSWORD: ci-only-password
-      JWT_SECRET: ci-only-jwt-secret-with-more-than-32-bytes-for-hs256
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
