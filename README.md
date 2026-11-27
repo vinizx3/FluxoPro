@@ -4,7 +4,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 6 e 8 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois, e a fase 9 (testes de integração com Testcontainers) está em andamento (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 6, 8 e 9 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka e testes de integração com Testcontainers), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -41,7 +41,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT (60 minutos). As senhas usam hash BCrypt. Cada usuário pode trocar a própria senha informando a atual.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio.
 - **Erros consistentes:** regra de negócio violada devolve `422`, conflito de edição `409` e recurso de outra empresa `404`, todos no mesmo formato.
-- **Testes automatizados:** 189 no backend (regras de domínio, services e consumers com Mockito, e testes de integração com Testcontainers) e 67 no frontend.
+- **Testes automatizados:** 192 no backend (regras de domínio, services e consumers com Mockito, e testes de integração com Testcontainers) e 67 no frontend.
 
 ### Regras do funil
 
@@ -300,7 +300,7 @@ cd frontend
 npm test
 ```
 
-Os testes de integração do backend usam Testcontainers: eles sobem o próprio PostgreSQL 16 e Kafka em containers descartáveis, então precisam apenas do **Docker em execução**, sem `docker compose up` e sem arquivo `.env`. O contexto completo da aplicação (com as migrations do Flyway) é testado assim, e a projeção do funil (SQL com `ON CONFLICT` e deduplicação por evento) tem teste contra um banco real. Os testes dos consumers e do relay são unitários, com Mockito. Ainda falta, na fase 9, o teste ponta a ponta do Outbox até o Kafka e o da dead-letter.
+Os testes de integração do backend usam Testcontainers: eles sobem o próprio PostgreSQL 16 e Kafka em containers descartáveis, então precisam apenas do **Docker em execução**, sem `docker compose up` e sem arquivo `.env`. Eles cobrem o contexto completo da aplicação (com as migrations do Flyway), a projeção do funil (SQL com `ON CONFLICT` e deduplicação por evento), o caminho de uma venda pelo Outbox, pelo Kafka e até a notificação e o funil, e a dead-letter (mensagem malformada vai direto para `opportunity.events-dlt`, com a causa do erro). Os testes dos consumers e do relay são unitários, com Mockito.
 
 ### Integração contínua
 
@@ -327,8 +327,8 @@ Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa exec
 | 7a | Docker (imagens, Compose de produção) e CI com GitHub Actions | Concluída |
 | 7b | Publicação com HTTPS, e-mail real em produção (resumo diário e "esqueci minha senha") e contas de demonstração | Adiada |
 | 8 | Kafka com Outbox transacional: eventos da negociação, consumers independentes (notificação, e-mail e métricas do funil), retry com dead-letter e replay | Concluída |
-| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka): contexto e projeção do funil prontos; falta o ponta a ponta do Outbox e a dead-letter | Em andamento |
-| 10 | Cache com Redis, com latência medida antes e depois | Planejada |
+| 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka): contexto, projeção do funil, fluxo ponta a ponta do Outbox e dead-letter | Concluída |
+| 10 | Cache com Redis, com latência medida antes e depois | Próxima |
 | 11 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana | Planejada |
 | 12 | Upload de documentos | Planejada |
 | 13 | Resumo de negociação com IA (opcional) | Planejada |
