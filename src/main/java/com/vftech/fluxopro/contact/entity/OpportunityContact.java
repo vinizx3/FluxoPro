@@ -6,6 +6,7 @@ import com.vftech.fluxopro.user.entity.User;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -38,6 +39,12 @@ public class OpportunityContact {
     @Column(nullable = false, updatable = false)
     private Instant contactedAt;
 
+    @Column(updatable = false)
+    private LocalDate nextStepAt;
+
+    @Column(length = 255, updatable = false)
+    private String nextStepNote;
+
     protected OpportunityContact() {
     }
 
@@ -50,6 +57,17 @@ public class OpportunityContact {
         this.note = note;
         this.contactedAt = contactedAt;
     }
+
+    public OpportunityContact(Company company, Opportunity opportunity, User author,
+                              ContactKind kind, String note, Instant contactedAt,
+                              LocalDate nextStepAt, String nextStepNote) {
+        this(company, opportunity, author, kind, note, contactedAt);
+        this.nextStepAt = nextStepAt;
+        this.nextStepNote = nextStepNote;
+    }
+
+    public LocalDate getNextStepAt() { return nextStepAt; }
+    public String getNextStepNote() { return nextStepNote; }
 
     public UUID getId() { return id; }
     public Company getCompany() { return company; }

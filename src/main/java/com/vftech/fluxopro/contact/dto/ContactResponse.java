@@ -4,6 +4,7 @@ import com.vftech.fluxopro.contact.entity.ContactKind;
 import com.vftech.fluxopro.contact.entity.OpportunityContact;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record ContactResponse(
@@ -12,7 +13,9 @@ public record ContactResponse(
         String note,
         UUID authorId,
         String authorName,
-        Instant contactedAt) {
+        Instant contactedAt,
+        LocalDate nextStepAt,
+        String nextStepNote) {
 
     public static ContactResponse from(OpportunityContact c) {
         return new ContactResponse(
@@ -21,6 +24,8 @@ public record ContactResponse(
                 c.getNote(),
                 c.getAuthor().getId(),
                 c.getAuthor().getName(),
-                c.getContactedAt());
+                c.getContactedAt(),
+                c.getNextStepAt(),
+                c.getNextStepNote());
     }
 }
