@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./layout/shell').then((m) => m.Shell),
     children: [
       {
+        path: 'hoje',
+        title: 'Hoje · FluxoPro',
+        loadComponent: () => import('./features/today/today-page').then((m) => m.TodayPage),
+      },
+      {
         path: 'funil',
         title: 'Funil · FluxoPro',
         loadComponent: () => import('./features/funnel/funnel-page').then((m) => m.FunnelPage),
@@ -80,7 +85,7 @@ export const routes: Routes = [
             (m) => m.OpportunityDetailPage,
           ),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'funil' },
+      { path: '', pathMatch: 'full', redirectTo: 'hoje' },
     ],
   },
   { path: '**', redirectTo: '' },

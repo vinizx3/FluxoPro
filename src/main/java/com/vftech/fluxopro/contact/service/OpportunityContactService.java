@@ -66,7 +66,9 @@ public class OpportunityContactService {
                 users.getReferenceById(user.id()),
                 request.kind(),
                 request.note().trim(),
-                now));
+                now,
+                nextStepAt,
+                nextStepNote));
         opportunities.saveAndFlush(opportunity);
         return OpportunityResponse.from(opportunity);
     }

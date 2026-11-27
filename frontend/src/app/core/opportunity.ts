@@ -111,6 +111,8 @@ export interface Contact {
   authorId: string;
   authorName: string;
   contactedAt: string;
+  nextStepAt?: string | null;
+  nextStepNote?: string | null;
 }
 
 export interface ContactRequest {

@@ -36,6 +36,7 @@ export class OpportunityDetailPage {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly id = this.route.snapshot.paramMap.get('id') ?? '';
+  private openContactOnLoad = this.route.snapshot.queryParamMap.has('registrar');
 
   protected readonly label = STATUS_LABEL;
   protected readonly opportunity = signal<Opportunity | null>(null);
@@ -69,6 +70,7 @@ export class OpportunityDetailPage {
     note: ['', [Validators.required, Validators.maxLength(1000)]],
     nextStepAt: [''],
     nextStepNote: ['', Validators.maxLength(255)],
+    noNextStep: [false],
   });
 
   protected readonly form = this.fb.group({
@@ -87,6 +89,12 @@ export class OpportunityDetailPage {
       next: (o) => {
         this.apply(o);
         this.loading.set(false);
+        if (this.openContactOnLoad) {
+          this.openContactOnLoad = false;
+          if (this.isOpen(o)) {
+            this.openContact();
+          }
+        }
       },
       error: (err: unknown) => {
         this.error.set(errorMessage(err, { 404: 'Não encontramos essa negociação.' }));
@@ -192,7 +200,13 @@ export class OpportunityDetailPage {
   }
 
   protected openContact(): void {
-    this.contactForm.reset({ kind: 'CALL', note: '', nextStepAt: '', nextStepNote: '' });
+    this.contactForm.reset({
+      kind: 'CALL',
+      note: '',
+      nextStepAt: '',
+      nextStepNote: '',
+      noNextStep: false,
+    });
     this.contactFormError.set(null);
     this.contactOpen.set(true);
   }
@@ -210,6 +224,12 @@ export class OpportunityDetailPage {
     const nextStepAt = blankToNull(v.nextStepAt);
     if (nextStepAt && nextStepAt < this.today) {
       this.contactFormError.set('A data do próximo passo não pode ser no passado.');
+      return;
+    }
+    if (!nextStepAt && !v.noNextStep) {
+      this.contactFormError.set(
+        'Defina o próximo passo ou marque "Sem próximo passo por enquanto".',
+      );
       return;
     }
     this.contactSaving.set(true);
