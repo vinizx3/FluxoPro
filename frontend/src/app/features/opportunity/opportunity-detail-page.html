@@ -138,6 +138,14 @@
                 }}</time>
               </div>
               <p>{{ c.note }}</p>
+              @if (c.nextStepAt) {
+                <p class="next-step">
+                  Próximo passo: {{ c.nextStepAt | date: 'dd/MM/yyyy' }}
+                  @if (c.nextStepNote) {
+                    · {{ c.nextStepNote }}
+                  }
+                </p>
+              }
             </li>
           } @empty {
             <li class="empty-line">
@@ -252,7 +260,7 @@
         }
       </div>
       <div class="field">
-        <label for="ct-date">Próximo passo (opcional)</label>
+        <label for="ct-date">Próximo passo</label>
         <input id="ct-date" type="date" [min]="today" formControlName="nextStepAt" />
       </div>
       @if (contactForm.controls.nextStepAt.value) {
@@ -266,6 +274,12 @@
             formControlName="nextStepNote"
           />
         </div>
+      }
+      @if (!contactForm.controls.nextStepAt.value) {
+        <label class="check">
+          <input type="checkbox" formControlName="noNextStep" />
+          Sem próximo passo por enquanto
+        </label>
       }
       @if (contactFormError()) {
         <p class="msg error" role="alert">{{ contactFormError() }}</p>
