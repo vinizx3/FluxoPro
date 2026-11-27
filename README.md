@@ -4,7 +4,7 @@
 
 > Um funil de vendas que impede a empresa de perder as negociações que já começaram.
 
-**Status:** em desenvolvimento, fases 1 a 6, 8 e 9 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka e testes de integração com Testcontainers), mais a parte de Docker e CI/CD da fase 7. A publicação na internet (fase 7b) fica para depois (veja o [roadmap](#roadmap)).
+**Status:** em desenvolvimento, fases 1 a 6, 8 e 9 de 13 concluídas (backend e frontend funcionando, com mensageria via Kafka e testes de integração com Testcontainers), mais a parte de Docker e CI/CD da fase 7 e a tela "Hoje" (primeira etapa de produto, voltada ao uso diário). A publicação na internet (fase 7b) fica para depois (veja o [roadmap](#roadmap)).
 
 ## O problema
 
@@ -20,7 +20,8 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 
 - **Funil Kanban:** Lead, Qualificação, Proposta e Negociação, com as regras de movimentação aplicadas. Negociações encerradas (ganhas e perdidas) ficam numa lista própria.
 - **Termômetro de atividade:** cada cartão mostra os dias sem movimento (a última atividade é a mais recente entre a mudança de etapa e o último contato). Passou do limite da empresa (7 dias por padrão, ajustável pelo dono de 1 a 90), a negociação aparece na faixa "Esfriando agora", com o valor total em risco.
-- **Contatos e próximo passo:** registro de ligação, WhatsApp, e-mail ou reunião. Cada contato reinicia o termômetro, e o próximo passo agendado aparece no cartão, com destaque quando está vencido.
+- **Tela "Hoje" (tela inicial):** a agenda do dia em três grupos: atrasadas, para hoje e negociações abertas sem próximo passo. O vendedor vê as suas, e o dono vê as da empresa. Cada item tem WhatsApp com um clique e um atalho para registrar o contato.
+- **Contatos e próximo passo:** registro de ligação, WhatsApp, e-mail ou reunião. Cada contato reinicia o termômetro. Ao registrar, é preciso definir o próximo passo (data e o que fazer) ou marcar que não há um por enquanto, para nenhuma venda ficar sem passo seguinte. O próximo passo agendado aparece no cartão, com destaque quando está vencido, e fica guardado na linha do tempo de cada contato.
 - **WhatsApp com um clique:** botão que abre a conversa com uma mensagem de acompanhamento pronta, no funil, nos clientes e na negociação.
 - **Clientes e projetos:** cadastro de clientes com busca. Quando uma negociação é ganha, o projeto nasce sozinho, ligado ao cliente e à venda de origem.
 - **Alertas:** um job diário (8h, horário de Brasília) avisa o responsável de cada negociação parada, uma única vez por período de parada. Cada usuário tem a sua caixa de entrada, com contador de não lidos.
@@ -41,7 +42,7 @@ O FluxoPro não gera clientes novos. Ele evita perder quem já demonstrou intere
 - **Autenticação:** o cadastro cria a empresa e o seu dono; o login devolve um JWT (60 minutos). As senhas usam hash BCrypt. Cada usuário pode trocar a própria senha informando a atual.
 - **Edição simultânea segura:** editar ou mover um registro exige a `version` que o cliente leu. Se outra pessoa alterou antes, a API responde `409` em vez de sobrescrever em silêncio.
 - **Erros consistentes:** regra de negócio violada devolve `422`, conflito de edição `409` e recurso de outra empresa `404`, todos no mesmo formato.
-- **Testes automatizados:** 192 no backend (regras de domínio, services e consumers com Mockito, e testes de integração com Testcontainers) e 67 no frontend.
+- **Testes automatizados:** 195 no backend (regras de domínio, services e consumers com Mockito, e testes de integração com Testcontainers) e 67 no frontend.
 
 ### Regras do funil
 
@@ -264,7 +265,8 @@ curl http://localhost:8082/opportunities/board -H "Authorization: Bearer $TOKEN"
 | PATCH | `/opportunities/{id}/status` | Move para outra etapa (exige `version`; `lostReason` obrigatório para `LOST`) |
 | PATCH | `/opportunities/{id}/owner` | Transfere para outro vendedor (somente `OWNER`; exige `version`) |
 | POST | `/opportunities/{id}/contacts` | Registra um contato e, opcionalmente, o próximo passo |
-| GET | `/opportunities/{id}/contacts` | Linha do tempo de contatos da negociação |
+| GET | `/opportunities/{id}/contacts` | Linha do tempo de contatos da negociação, com o próximo passo combinado em cada um |
+| GET | `/today` | Agenda do dia: negociações atrasadas, para hoje e sem próximo passo (o `SELLER` vê só as dele) |
 | POST | `/opportunities/{id}/archive` | Arquiva uma negociação `WON` ou `LOST` |
 | GET | `/opportunities/stalled?days=&page=&size=` | Negociações abertas sem atividade há N dias (padrão 7); o `SELLER` vê só as dele |
 | POST | `/projects` | Cria um projeto direto para um cliente |
@@ -328,10 +330,11 @@ Os valores usados no CI (senha do banco e segredo do JWT) existem só nessa exec
 | 7b | Publicação com HTTPS, e-mail real em produção (resumo diário e "esqueci minha senha") e contas de demonstração | Adiada |
 | 8 | Kafka com Outbox transacional: eventos da negociação, consumers independentes (notificação, e-mail e métricas do funil), retry com dead-letter e replay | Concluída |
 | 9 | Testes de integração com Testcontainers (PostgreSQL e Kafka): contexto, projeção do funil, fluxo ponta a ponta do Outbox e dead-letter | Concluída |
+| P1 | Tela "Hoje": agenda diária com próximo passo obrigatório ao registrar contato e histórico do que foi combinado | Concluída |
 | 10 | Cache com Redis, com latência medida antes e depois | Próxima |
 | 11 | Observabilidade: Actuator, Micrometer, Prometheus, Grafana | Planejada |
 | 12 | Upload de documentos | Planejada |
-| 13 | Resumo de negociação com IA (opcional) | Planejada |
+| 13 | IA opcional, com o vendedor no controle: sugestão de mensagem de acompanhamento e resumo da negociação a partir do histórico | Planejada |
 
 ## Autor
 
