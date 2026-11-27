@@ -1,0 +1,69 @@
+<div class="page-head">
+  <h1>Hoje</h1>
+  @if (data(); as d) {
+    <span class="date">{{ d.date | date: 'dd/MM/yyyy' }}</span>
+  }
+</div>
+
+@if (error()) {
+  <p class="msg error" role="alert">{{ error() }}</p>
+}
+
+@if (loading()) {
+  <p class="muted">Carregando sua agenda…</p>
+} @else if (data()) {
+  @if (!hasDueWork()) {
+    <p class="empty">Nada atrasado nem marcado para hoje. Bom trabalho!</p>
+  }
+
+  @for (s of sections(); track s.key) {
+    @if (s.items.length > 0) {
+      <section class="block" [class]="'block ' + s.key" [attr.aria-labelledby]="'sec-' + s.key">
+        <h2 id="sec-{{ s.key }}">
+          {{ s.title }} <span class="count">{{ s.items.length }}</span>
+        </h2>
+        <p class="hint">{{ s.hint }}</p>
+        <ul class="list">
+          @for (i of s.items; track i.id) {
+            <li>
+              <div class="text">
+                <a class="title" [routerLink]="['/negociacoes', i.id]">{{ i.title }}</a>
+                <span>
+                  {{ i.customerName }} · {{ label[i.status] }}
+                  @if (i.amount !== null) {
+                    · {{ i.amount | currency: 'BRL' }}
+                  }
+                  @if (auth.isOwner()) {
+                    · {{ i.ownerName }}
+                  }
+                </span>
+                @if (i.nextStepNote) {
+                  <span class="note">{{ i.nextStepNote }}</span>
+                }
+                <small>{{ info(s.key, i) }}</small>
+              </div>
+              <div class="actions">
+                @if (wa(i); as link) {
+                  <a
+                    class="btn btn-secondary"
+                    [href]="link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    [attr.aria-label]="'Chamar ' + i.customerName + ' no WhatsApp (abre em nova aba)'"
+                    >WhatsApp</a
+                  >
+                }
+                <a
+                  class="btn btn-primary"
+                  [routerLink]="['/negociacoes', i.id]"
+                  [queryParams]="{ registrar: 1 }"
+                  >Registrar contato</a
+                >
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+}
